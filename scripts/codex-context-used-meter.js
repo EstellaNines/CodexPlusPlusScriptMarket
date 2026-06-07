@@ -5,7 +5,8 @@
   const STYLE_ID = "codex-context-meter-style";
   const ROOT_ID = "codex-context-meter";
   const CAPTURE_STATE_KEY = "__codexContextMeterCaptureState";
-  const SCRIPT_VERSION = 34;
+  const SCRIPT_VERSION = 35;
+  const CONTEXT_METER_POSITION_STORAGE_KEY = "__codexContextMeterPlacement";
   const UPDATE_INTERVAL_MS = 5000;
   const SLOW_SCAN_INTERVAL_MS = 30000;
   const SWITCH_RETRY_WINDOW_MS = 8000;
@@ -160,6 +161,8 @@
     appSignalSkipGeneration: new WeakMap(),
     threadContentLookupAt: 0,
     threadContentLookupResult: false,
+    meterPlacement: null,
+    meterDrag: null,
   };
 
   function getCaptureState() {
@@ -199,17 +202,47 @@
         box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
         font: 12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         overflow: visible;
-        pointer-events: none;
+        pointer-events: auto;
         user-select: none;
         backdrop-filter: blur(10px);
+      }
+
+      #${ROOT_ID}[data-placement="floating"] {
+        transform: none;
+      }
+
+      #${ROOT_ID}[data-locked="false"] {
+        cursor: move;
       }
 
       #${ROOT_ID} .ccm-row {
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 6px;
         margin-bottom: 6px;
         white-space: nowrap;
+      }
+
+      #${ROOT_ID} .ccm-lock {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 22px;
+        height: 22px;
+        border: 1px solid rgba(148, 163, 184, 0.34);
+        border-radius: 5px;
+        background: rgba(15, 23, 42, 0.38);
+        color: rgba(226, 232, 240, 0.92);
+        font: 11px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0;
+        cursor: pointer;
+      }
+
+      #${ROOT_ID} .ccm-lock:hover {
+        border-color: rgba(125, 211, 252, 0.64);
+        background: rgba(14, 165, 233, 0.2);
       }
 
       #${ROOT_ID} .ccm-value {
@@ -352,9 +385,18 @@
   function ensureRoot() {
     let root = document.getElementById(ROOT_ID);
     if (root) {
+      if (!root.querySelector(".ccm-lock")) {
+        const row = root.querySelector(".ccm-row");
+        const lock = document.createElement("button");
+        lock.type = "button";
+        lock.className = "ccm-lock";
+        row?.appendChild(lock);
+      }
       state.root = root;
       state.value = root.querySelector(".ccm-value");
       state.fill = root.querySelector(".ccm-fill");
+      wireMeterPlacementControls(root);
+      applyMeterPlacement(root);
       return root;
     }
 
@@ -371,6 +413,7 @@
             <span class="ccm-value-percent">--</span>
           </span>
         </span>
+        <button type="button" class="ccm-lock"></button>
       </div>
       <div class="ccm-track">
         <div class="ccm-fill"></div>
@@ -380,7 +423,168 @@
     state.root = root;
     state.value = root.querySelector(".ccm-value");
     state.fill = root.querySelector(".ccm-fill");
+    wireMeterPlacementControls(root);
+    applyMeterPlacement(root);
     return root;
+  }
+
+  function defaultMeterPlacement() {
+    return {
+      mode: "top-center",
+      locked: true,
+      x: 0,
+      y: 10,
+    };
+  }
+
+  function normalizeMeterPlacement(raw) {
+    if (!raw || typeof raw !== "object") return defaultMeterPlacement();
+    const mode = raw.mode === "floating" ? "floating" : "top-center";
+    const x = Number.isFinite(Number(raw.x)) ? Number(raw.x) : 0;
+    const y = Number.isFinite(Number(raw.y)) ? Number(raw.y) : 10;
+    return {
+      mode,
+      locked: raw.locked !== false,
+      x,
+      y,
+    };
+  }
+
+  function loadMeterPlacement() {
+    try {
+      const text = window.localStorage?.getItem(CONTEXT_METER_POSITION_STORAGE_KEY);
+      if (!text) return defaultMeterPlacement();
+      return normalizeMeterPlacement(JSON.parse(text));
+    } catch (_) {
+      return defaultMeterPlacement();
+    }
+  }
+
+  function currentMeterPlacement() {
+    if (!state.meterPlacement) state.meterPlacement = loadMeterPlacement();
+    return state.meterPlacement;
+  }
+
+  function saveMeterPlacement(next) {
+    const placement = normalizeMeterPlacement({ ...currentMeterPlacement(), ...next });
+    state.meterPlacement = placement;
+    try {
+      window.localStorage?.setItem(CONTEXT_METER_POSITION_STORAGE_KEY, JSON.stringify(placement));
+    } catch (_) {
+      // Keep the in-memory placement if localStorage is unavailable.
+    }
+    return placement;
+  }
+
+  function clampMeterPlacement(root, placement) {
+    const margin = 10;
+    const rect = root?.getBoundingClientRect?.();
+    const width = Math.max(120, rect?.width || 280);
+    const height = Math.max(36, rect?.height || 48);
+    const viewportWidth = Math.max(width + margin * 2, window.innerWidth || document.documentElement?.clientWidth || 1024);
+    const viewportHeight = Math.max(height + margin * 2, window.innerHeight || document.documentElement?.clientHeight || 768);
+    return {
+      ...placement,
+      x: Math.min(viewportWidth - width - margin, Math.max(margin, Number(placement.x) || margin)),
+      y: Math.min(viewportHeight - height - margin, Math.max(margin, Number(placement.y) || margin)),
+    };
+  }
+
+  function refreshMeterLockControl(root) {
+    const placement = currentMeterPlacement();
+    const locked = placement.locked !== false;
+    root.dataset.locked = locked ? "true" : "false";
+    const lock = root.querySelector(".ccm-lock");
+    if (!lock) return;
+    lock.textContent = locked ? "锁" : "移";
+    lock.setAttribute("aria-label", locked ? "解锁并移动 Context Meter 位置" : "锁定 Context Meter 位置");
+    lock.title = locked ? "解锁移动位置" : "锁定当前位置";
+  }
+
+  function applyMeterPlacement(root, placement = currentMeterPlacement()) {
+    refreshMeterLockControl(root);
+    if (placement.mode !== "floating") {
+      root.dataset.placement = "top-center";
+      root.style.left = "";
+      root.style.top = "";
+      root.style.transform = "";
+      return placement;
+    }
+
+    const clamped = clampMeterPlacement(root, { ...placement, mode: "floating" });
+    root.dataset.placement = "floating";
+    root.style.left = `${Math.round(clamped.x)}px`;
+    root.style.top = `${Math.round(clamped.y)}px`;
+    root.style.transform = "none";
+    return saveMeterPlacement(clamped);
+  }
+
+  function floatMeterFromCurrentRect(root, locked) {
+    const rect = root.getBoundingClientRect?.();
+    return applyMeterPlacement(root, {
+      mode: "floating",
+      locked,
+      x: rect?.left || currentMeterPlacement().x || 10,
+      y: rect?.top || currentMeterPlacement().y || 10,
+    });
+  }
+
+  function toggleMeterPlacementLock(root) {
+    const placement = currentMeterPlacement();
+    floatMeterFromCurrentRect(root, placement.locked === false);
+    refreshMeterLockControl(root);
+  }
+
+  function wireMeterPlacementControls(root) {
+    refreshMeterLockControl(root);
+    if (root.__codexContextMeterPositionWired === SCRIPT_VERSION) return;
+    root.__codexContextMeterPositionWired = SCRIPT_VERSION;
+
+    root.addEventListener("click", (event) => {
+      const lock = event.target?.closest?.(".ccm-lock");
+      if (!lock) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMeterPlacementLock(root);
+    });
+
+    root.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || currentMeterPlacement().locked !== false) return;
+      if (event.target?.closest?.(".ccm-lock")) return;
+      floatMeterFromCurrentRect(root, false);
+      const placement = currentMeterPlacement();
+      state.meterDrag = {
+        pointerId: event.pointerId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startX: placement.x,
+        startY: placement.y,
+      };
+      root.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    });
+
+    root.addEventListener("pointermove", (event) => {
+      const drag = state.meterDrag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      applyMeterPlacement(root, {
+        mode: "floating",
+        locked: false,
+        x: drag.startX + event.clientX - drag.startClientX,
+        y: drag.startY + event.clientY - drag.startClientY,
+      });
+      event.preventDefault();
+    });
+
+    const finishDrag = (event) => {
+      const drag = state.meterDrag;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      state.meterDrag = null;
+      root.releasePointerCapture?.(event.pointerId);
+      applyMeterPlacement(root, currentMeterPlacement());
+    };
+    root.addEventListener("pointerup", finishDrag);
+    root.addEventListener("pointercancel", finishDrag);
   }
 
   function toNumber(value, unit) {

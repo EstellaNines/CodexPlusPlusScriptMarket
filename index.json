@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-07T12:07:55.000Z",
+  "updated_at": "2026-06-07T12:20:28.000Z",
   "scripts": [
     {
       "id": "codex-token-usage",
@@ -23,7 +23,7 @@
       "id": "codex-context-used-meter",
       "name": "Codex Context Used Meter",
       "description": "在 Codex App 对话界面顶部显示当前会话剩余上下文、已用/总 token，并提供轻量进度条和消耗动画。",
-      "version": "34",
+      "version": "35",
       "author": "Minghou-Lei",
       "tags": [
         "context",
@@ -33,7 +33,7 @@
       ],
       "homepage": "https://github.com/Minghou-Lei/codex-context-used-meter",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-context-used-meter.js",
-      "sha256": "80511de0516ddf8c5018104709dd52ce102a2940cd3c5b11e511199d55d9a50b"
+      "sha256": "1f728b07db5b0184999da649d2f4ac51dae20e8d4aeaaa809648d32d9fa1fa19"
     }
   ]
 }
