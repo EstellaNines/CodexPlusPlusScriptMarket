@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-token-usage";
-  const SCRIPT_VERSION = "0.1.8";
+  const SCRIPT_VERSION = "0.1.9";
   const BADGE_CLASS = "codex-token-usage-badge";
   const STYLE_ID = "codex-token-usage-style";
   const RECENT_LIMIT = 20;
@@ -455,15 +455,57 @@
     return applyFloatingBadgePosition(badge, placement);
   }
 
+  function createLockIconSvg(locked) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const paths = locked
+      ? ["M7 11V8a5 5 0 0 1 10 0v3", "M6 11h12v9H6z"]
+      : ["M8 11V8a5 5 0 0 1 9.5-2.1", "M6 11h12v9H6z"];
+    paths.forEach((value) => {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", value);
+      svg.appendChild(path);
+    });
+    return svg;
+  }
+
+  function renderLockIcon(lock, locked) {
+    lock.dataset.state = locked ? "locked" : "unlocked";
+    lock.replaceChildren(createLockIconSvg(locked));
+  }
+
+  function stopLockControlEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+  }
+
+  function handleLockClick(event) {
+    stopLockControlEvent(event);
+    const badge = event.currentTarget?.closest?.(`.${BADGE_CLASS}`);
+    if (badge) toggleBadgePlacementLock(badge);
+  }
+
+  function wireBadgeLockButton(lock) {
+    if (lock.__codexTokenUsageLockButtonWired === SCRIPT_VERSION) return;
+    lock.__codexTokenUsageLockButtonWired = SCRIPT_VERSION;
+    lock.addEventListener("pointerdown", stopLockControlEvent, true);
+    lock.addEventListener("mousedown", stopLockControlEvent, true);
+    lock.addEventListener("click", handleLockClick, true);
+  }
+
   function refreshBadgeLockControl(badge) {
     const placement = currentBadgePlacement();
     const locked = placement.locked !== false;
     badge.dataset.locked = locked ? "true" : "false";
     const lock = badge.querySelector?.(".codex-token-usage-lock");
     if (!lock) return;
-    lock.textContent = locked ? "锁" : "移";
     lock.setAttribute("aria-label", locked ? "解锁并移动 Token Usage 位置" : "锁定 Token Usage 位置");
     lock.title = locked ? "解锁移动位置" : "锁定当前位置";
+    renderLockIcon(lock, locked);
+    wireBadgeLockButton(lock);
   }
 
   function toggleBadgePlacementLock(badge) {
@@ -1804,12 +1846,14 @@
         cursor: default;
       }
       .${BADGE_CLASS} .codex-token-usage-lock {
+        appearance: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         flex: 0 0 auto;
         width: 22px;
         height: 22px;
+        padding: 0;
         margin: -1px -3px -1px 1px;
         border: 1px solid rgba(148, 163, 184, .32);
         border-radius: 5px;
@@ -1818,6 +1862,17 @@
         font: 11px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         letter-spacing: 0;
         cursor: pointer;
+        pointer-events: auto;
+      }
+      .${BADGE_CLASS} .codex-token-usage-lock svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
       }
       .${BADGE_CLASS} .codex-token-usage-lock:hover {
         border-color: rgba(20, 184, 166, .62);

@@ -5,7 +5,7 @@
   const STYLE_ID = "codex-context-meter-style";
   const ROOT_ID = "codex-context-meter";
   const CAPTURE_STATE_KEY = "__codexContextMeterCaptureState";
-  const SCRIPT_VERSION = 35;
+  const SCRIPT_VERSION = 36;
   const CONTEXT_METER_POSITION_STORAGE_KEY = "__codexContextMeterPlacement";
   const UPDATE_INTERVAL_MS = 5000;
   const SLOW_SCAN_INTERVAL_MS = 30000;
@@ -225,12 +225,14 @@
       }
 
       #${ROOT_ID} .ccm-lock {
+        appearance: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         flex: 0 0 auto;
         width: 22px;
         height: 22px;
+        padding: 0;
         border: 1px solid rgba(148, 163, 184, 0.34);
         border-radius: 5px;
         background: rgba(15, 23, 42, 0.38);
@@ -238,6 +240,17 @@
         font: 11px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         letter-spacing: 0;
         cursor: pointer;
+      }
+
+      #${ROOT_ID} .ccm-lock svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
       }
 
       #${ROOT_ID} .ccm-lock:hover {
@@ -490,15 +503,57 @@
     };
   }
 
+  function createMeterLockIconSvg(locked) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const paths = locked
+      ? ["M7 11V8a5 5 0 0 1 10 0v3", "M6 11h12v9H6z"]
+      : ["M8 11V8a5 5 0 0 1 9.5-2.1", "M6 11h12v9H6z"];
+    paths.forEach((value) => {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", value);
+      svg.appendChild(path);
+    });
+    return svg;
+  }
+
+  function renderMeterLockIcon(lock, locked) {
+    lock.dataset.state = locked ? "locked" : "unlocked";
+    lock.replaceChildren(createMeterLockIconSvg(locked));
+  }
+
+  function stopMeterLockControlEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+  }
+
+  function handleMeterLockClick(event) {
+    stopMeterLockControlEvent(event);
+    const root = event.currentTarget?.closest?.(`#${ROOT_ID}`);
+    if (root) toggleMeterPlacementLock(root);
+  }
+
+  function wireMeterLockButton(lock) {
+    if (lock.__codexContextMeterLockButtonWired === SCRIPT_VERSION) return;
+    lock.__codexContextMeterLockButtonWired = SCRIPT_VERSION;
+    lock.addEventListener("pointerdown", stopMeterLockControlEvent, true);
+    lock.addEventListener("mousedown", stopMeterLockControlEvent, true);
+    lock.addEventListener("click", handleMeterLockClick, true);
+  }
+
   function refreshMeterLockControl(root) {
     const placement = currentMeterPlacement();
     const locked = placement.locked !== false;
     root.dataset.locked = locked ? "true" : "false";
     const lock = root.querySelector(".ccm-lock");
     if (!lock) return;
-    lock.textContent = locked ? "锁" : "移";
     lock.setAttribute("aria-label", locked ? "解锁并移动 Context Meter 位置" : "锁定 Context Meter 位置");
     lock.title = locked ? "解锁移动位置" : "锁定当前位置";
+    renderMeterLockIcon(lock, locked);
+    wireMeterLockButton(lock);
   }
 
   function applyMeterPlacement(root, placement = currentMeterPlacement()) {
