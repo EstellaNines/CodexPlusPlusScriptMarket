@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-token-usage";
-  const SCRIPT_VERSION = "0.1.10";
+  const SCRIPT_VERSION = "0.1.11";
   const BADGE_CLASS = "codex-token-usage-badge";
   const STYLE_ID = "codex-token-usage-style";
   const RECENT_LIMIT = 20;
@@ -1636,6 +1636,19 @@
     return rect;
   }
 
+  function isRootConversationContainer(node) {
+    if (!(node instanceof Element)) return true;
+    const tagName = node.tagName;
+    return (
+      tagName === "MAIN" ||
+      tagName === "BODY" ||
+      tagName === "HTML" ||
+      node === document.querySelector?.("main") ||
+      node === document.body ||
+      node === document.documentElement
+    );
+  }
+
   function isConversationActionButton(node) {
     if (!(node instanceof Element)) return false;
     const label = node.getAttribute("aria-label") || "";
@@ -1650,6 +1663,7 @@
 
   function scoreAssistantContainer(node) {
     if (!(node instanceof Element)) return -1;
+    if (isRootConversationContainer(node)) return -1;
     const rect = visibleRect(node);
     if (!rect || rect.width < 240 || rect.height < 48) return -1;
     const text = node.innerText || node.textContent || "";

@@ -12,7 +12,7 @@ https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/in
 
 | 脚本 | 版本 | 改版内容 | 上游 |
 | --- | --- | --- | --- |
-| Codex Token Usage | 0.1.10 | 彩色 token 指标；固定随最新 Codex 回复显示，不提供位置锁定或拖动。 | https://github.com/kokotao/codex-token-usage-script |
+| Codex Token Usage | 0.1.11 | 彩色 token 指标；固定随最新 Codex 回复显示，并避免误挂到 Codex 页面根容器后被隐藏。 | https://github.com/kokotao/codex-token-usage-script |
 | Codex Context Used Meter | 37 | 彩色上下文用量文字；默认从顶部下移显示；支持锁定/解锁图标按钮与持久化拖动位置。 | https://github.com/Minghou-Lei/codex-context-used-meter |
 
 ## 使用方式
