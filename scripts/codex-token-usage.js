@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-token-usage";
-  const SCRIPT_VERSION = "0.1.9";
+  const SCRIPT_VERSION = "0.1.10";
   const BADGE_CLASS = "codex-token-usage-badge";
   const STYLE_ID = "codex-token-usage-style";
   const RECENT_LIMIT = 20;
@@ -13,7 +13,6 @@
   const CONTEXT_MERGE_WINDOW_MS = 30000;
   const CROSS_SOURCE_DEDUPE_WINDOW_MS = 3000;
   const STORAGE_KEY = "__codexTokenUsageRecentDetails";
-  const TOKEN_USAGE_POSITION_STORAGE_KEY = "__codexTokenUsageBadgePlacement";
 
   if (window.__codexTokenUsageScriptInstalled && window.__codexTokenUsageVersion === SCRIPT_VERSION) return;
   window.__codexTokenUsageScriptInstalled = true;
@@ -36,8 +35,6 @@
     contextPollTimer: 0,
     pendingTurnStartAt: 0,
     historyRestoreState: Object.create(null),
-    badgePlacement: null,
-    badgeDrag: null,
     debug: [],
   };
 
@@ -358,214 +355,7 @@
       span.textContent = part.text;
       nodes.push(span);
     });
-    content.replaceChildren(...nodes);
-
-    const lock = document.createElement("button");
-    lock.type = "button";
-    lock.className = "codex-token-usage-lock";
-    badge.replaceChildren(content, lock);
-    refreshBadgeLockControl(badge);
-  }
-
-  function defaultBadgePlacement() {
-    return {
-      mode: "message-actions",
-      locked: true,
-      x: 24,
-      y: 96,
-    };
-  }
-
-  function normalizeBadgePlacement(raw) {
-    if (!raw || typeof raw !== "object") return defaultBadgePlacement();
-    const mode = raw.mode === "floating" ? "floating" : "message-actions";
-    const x = Number.isFinite(Number(raw.x)) ? Number(raw.x) : 24;
-    const y = Number.isFinite(Number(raw.y)) ? Number(raw.y) : 96;
-    return {
-      mode,
-      locked: raw.locked !== false,
-      x,
-      y,
-    };
-  }
-
-  function loadBadgePlacement() {
-    try {
-      const text = window.localStorage?.getItem(TOKEN_USAGE_POSITION_STORAGE_KEY);
-      if (!text) return defaultBadgePlacement();
-      return normalizeBadgePlacement(JSON.parse(text));
-    } catch (_) {
-      return defaultBadgePlacement();
-    }
-  }
-
-  function currentBadgePlacement() {
-    if (!state.badgePlacement) state.badgePlacement = loadBadgePlacement();
-    return state.badgePlacement;
-  }
-
-  function saveBadgePlacement(next) {
-    const placement = normalizeBadgePlacement({ ...currentBadgePlacement(), ...next });
-    state.badgePlacement = placement;
-    try {
-      window.localStorage?.setItem(TOKEN_USAGE_POSITION_STORAGE_KEY, JSON.stringify(placement));
-    } catch (_) {
-      // Keep the in-memory placement even if browser storage is temporarily unavailable.
-    }
-    return placement;
-  }
-
-  function clampBadgePosition(placement, badge) {
-    const margin = 10;
-    const rect = badge?.getBoundingClientRect?.();
-    const width = Math.max(40, rect?.width || 320);
-    const height = Math.max(28, rect?.height || 44);
-    const viewportWidth = Math.max(width + margin * 2, window.innerWidth || document.documentElement?.clientWidth || 1024);
-    const viewportHeight = Math.max(height + margin * 2, window.innerHeight || document.documentElement?.clientHeight || 768);
-    const maxX = viewportWidth - width - margin;
-    const maxY = viewportHeight - height - margin;
-    return {
-      ...placement,
-      x: Math.min(maxX, Math.max(margin, Number(placement.x) || margin)),
-      y: Math.min(maxY, Math.max(margin, Number(placement.y) || margin)),
-    };
-  }
-
-  function ensureFloatingBadgeAttached(badge) {
-    if (badge.parentElement !== document.body) document.body.appendChild(badge);
-  }
-
-  function applyFloatingBadgePosition(badge, placement = currentBadgePlacement()) {
-    ensureFloatingBadgeAttached(badge);
-    const clamped = clampBadgePosition({ ...placement, mode: "floating" }, badge);
-    badge.dataset.placement = "floating";
-    badge.style.left = `${Math.round(clamped.x)}px`;
-    badge.style.top = `${Math.round(clamped.y)}px`;
-    return saveBadgePlacement(clamped);
-  }
-
-  function floatBadgeFromCurrentRect(badge, locked) {
-    const rect = badge.getBoundingClientRect?.();
-    const placement = {
-      mode: "floating",
-      locked,
-      x: rect?.left || currentBadgePlacement().x,
-      y: rect?.top || currentBadgePlacement().y,
-    };
-    return applyFloatingBadgePosition(badge, placement);
-  }
-
-  function createLockIconSvg(locked) {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("aria-hidden", "true");
-    svg.setAttribute("focusable", "false");
-    const paths = locked
-      ? ["M7 11V8a5 5 0 0 1 10 0v3", "M6 11h12v9H6z"]
-      : ["M8 11V8a5 5 0 0 1 9.5-2.1", "M6 11h12v9H6z"];
-    paths.forEach((value) => {
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", value);
-      svg.appendChild(path);
-    });
-    return svg;
-  }
-
-  function renderLockIcon(lock, locked) {
-    lock.dataset.state = locked ? "locked" : "unlocked";
-    lock.replaceChildren(createLockIconSvg(locked));
-  }
-
-  function stopLockControlEvent(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation?.();
-  }
-
-  function handleLockClick(event) {
-    stopLockControlEvent(event);
-    const badge = event.currentTarget?.closest?.(`.${BADGE_CLASS}`);
-    if (badge) toggleBadgePlacementLock(badge);
-  }
-
-  function wireBadgeLockButton(lock) {
-    if (lock.__codexTokenUsageLockButtonWired === SCRIPT_VERSION) return;
-    lock.__codexTokenUsageLockButtonWired = SCRIPT_VERSION;
-    lock.addEventListener("pointerdown", stopLockControlEvent, true);
-    lock.addEventListener("mousedown", stopLockControlEvent, true);
-    lock.addEventListener("click", handleLockClick, true);
-  }
-
-  function refreshBadgeLockControl(badge) {
-    const placement = currentBadgePlacement();
-    const locked = placement.locked !== false;
-    badge.dataset.locked = locked ? "true" : "false";
-    const lock = badge.querySelector?.(".codex-token-usage-lock");
-    if (!lock) return;
-    lock.setAttribute("aria-label", locked ? "解锁并移动 Token Usage 位置" : "锁定 Token Usage 位置");
-    lock.title = locked ? "解锁移动位置" : "锁定当前位置";
-    renderLockIcon(lock, locked);
-    wireBadgeLockButton(lock);
-  }
-
-  function toggleBadgePlacementLock(badge) {
-    const placement = currentBadgePlacement();
-    floatBadgeFromCurrentRect(badge, placement.locked === false);
-    refreshBadgeLockControl(badge);
-  }
-
-  function wireBadgePositionControls(badge) {
-    refreshBadgeLockControl(badge);
-    if (badge.__codexTokenUsagePositionWired === SCRIPT_VERSION) return;
-    badge.__codexTokenUsagePositionWired = SCRIPT_VERSION;
-
-    badge.addEventListener("click", (event) => {
-      const lock = event.target?.closest?.(".codex-token-usage-lock");
-      if (!lock) return;
-      event.preventDefault();
-      event.stopPropagation();
-      toggleBadgePlacementLock(badge);
-    });
-
-    badge.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0 || currentBadgePlacement().locked !== false) return;
-      if (event.target?.closest?.(".codex-token-usage-lock")) return;
-      floatBadgeFromCurrentRect(badge, false);
-      const placement = currentBadgePlacement();
-      state.badgeDrag = {
-        pointerId: event.pointerId,
-        startClientX: event.clientX,
-        startClientY: event.clientY,
-        startX: placement.x,
-        startY: placement.y,
-        badge,
-      };
-      badge.setPointerCapture?.(event.pointerId);
-      event.preventDefault();
-    });
-
-    badge.addEventListener("pointermove", (event) => {
-      const drag = state.badgeDrag;
-      if (!drag || drag.pointerId !== event.pointerId || drag.badge !== badge) return;
-      const next = {
-        mode: "floating",
-        locked: false,
-        x: drag.startX + event.clientX - drag.startClientX,
-        y: drag.startY + event.clientY - drag.startClientY,
-      };
-      applyFloatingBadgePosition(badge, next);
-      event.preventDefault();
-    });
-
-    const finishDrag = (event) => {
-      const drag = state.badgeDrag;
-      if (!drag || drag.pointerId !== event.pointerId || drag.badge !== badge) return;
-      state.badgeDrag = null;
-      badge.releasePointerCapture?.(event.pointerId);
-      applyFloatingBadgePosition(badge, currentBadgePlacement());
-    };
-    badge.addEventListener("pointerup", finishDrag);
-    badge.addEventListener("pointercancel", finishDrag);
+    badge.replaceChildren(content);
   }
 
   function parseElapsedMs(text) {
@@ -1832,53 +1622,8 @@
         width: fit-content;
         margin: 6px 0 0;
       }
-      .${BADGE_CLASS}[data-placement="floating"] {
-        position: fixed;
-        z-index: 2147483646;
-        max-width: min(720px, calc(100vw - 20px));
-        margin: 0;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, .28);
-        backdrop-filter: blur(12px);
-        cursor: move;
-        user-select: none;
-      }
-      .${BADGE_CLASS}[data-placement="floating"][data-locked="true"] {
-        cursor: default;
-      }
-      .${BADGE_CLASS} .codex-token-usage-lock {
-        appearance: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex: 0 0 auto;
-        width: 22px;
-        height: 22px;
-        padding: 0;
-        margin: -1px -3px -1px 1px;
-        border: 1px solid rgba(148, 163, 184, .32);
-        border-radius: 5px;
-        background: rgba(15, 23, 42, .32);
-        color: rgba(226, 232, 240, .92);
-        font: 11px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        letter-spacing: 0;
-        cursor: pointer;
-        pointer-events: auto;
-      }
-      .${BADGE_CLASS} .codex-token-usage-lock svg {
-        width: 14px;
-        height: 14px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        pointer-events: none;
-      }
-      .${BADGE_CLASS} .codex-token-usage-lock:hover {
-        border-color: rgba(20, 184, 166, .62);
-        background: rgba(20, 184, 166, .18);
-      }
-      main > .${BADGE_CLASS}[data-placement="fallback"] {
+      main > .${BADGE_CLASS},
+      body > .${BADGE_CLASS} {
         display: none !important;
       }
     `;
@@ -2002,49 +1747,25 @@
     }
     if (!metric) return;
     ensureStyle();
-    const placement = currentBadgePlacement();
     const target = latestAssistantNode();
-    if (!target && placement.mode !== "floating") return;
+    if (!target) return;
     const displayMetric = {
       ...metric,
-      elapsedMs: target ? elapsedFromAssistantNode(target) || metric.elapsedMs : metric.elapsedMs,
+      elapsedMs: elapsedFromAssistantNode(target) || metric.elapsedMs,
     };
-    let badge = null;
-    if (placement.mode === "floating") {
-      badge = document.querySelector?.(`body > .${BADGE_CLASS}[data-placement="floating"]`);
-      if (!badge) {
-        badge = document.createElement("div");
-        badge.className = BADGE_CLASS;
-      }
-      applyFloatingBadgePosition(badge, placement);
-    } else {
-      document.querySelectorAll(`body > .${BADGE_CLASS}[data-placement="floating"]`).forEach((node) => node.remove());
-      badge = target.querySelector?.(`:scope > .${BADGE_CLASS}`);
-      if (!badge) {
-        badge = document.createElement("div");
-        badge.className = BADGE_CLASS;
-        target.appendChild(badge);
-      }
-      badge.style.left = "";
-      badge.style.top = "";
-      badge.dataset.placement = target === document.querySelector("main") ? "fallback" : "message-actions";
-    }
-    if (!badge.isConnected) {
+    document.querySelectorAll(`main > .${BADGE_CLASS}, body > .${BADGE_CLASS}`).forEach((node) => node.remove());
+    let badge = target.querySelector?.(`:scope > .${BADGE_CLASS}`);
+    if (!badge) {
       badge = document.createElement("div");
       badge.className = BADGE_CLASS;
-      if (placement.mode === "floating") {
-        applyFloatingBadgePosition(badge, placement);
-      } else {
-        target.appendChild(badge);
-      }
+      target.appendChild(badge);
     }
     badge.dataset.metricId = displayMetric.id || "";
     badge.dataset.status = displayMetric.status || "complete";
     badge.dataset.conversationId = displayMetric.conversationId || "";
     badge.dataset.version = SCRIPT_VERSION;
+    badge.dataset.placement = target === document.querySelector("main") ? "fallback" : "message-actions";
     renderBadgeParts(badge, formatBadgeParts(displayMetric));
-    wireBadgePositionControls(badge);
-    if (placement.mode === "floating") applyFloatingBadgePosition(badge, currentBadgePlacement());
     document.querySelectorAll(`.${BADGE_CLASS}`).forEach((node) => {
       if (node !== badge) node.remove();
     });

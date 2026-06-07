@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updated_at": "2026-06-07T12:48:46.000Z",
+  "updated_at": "2026-06-07T13:00:43.000Z",
   "scripts": [
     {
       "id": "codex-token-usage",
       "name": "Codex Token Usage",
       "description": "在 Codex 每次回复完成后显示本轮调用合计、输入输出、缓存命中、上下文用量和耗时，并支持按会话恢复历史统计。",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "author": "Albert_Luo",
       "tags": [
         "codex",
@@ -17,13 +17,13 @@
       ],
       "homepage": "https://github.com/kokotao/codex-token-usage-script",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-token-usage.js",
-      "sha256": "5cc35d183490a81cfe1baf9349c31fb65746504f891b31f191835eb2b880201c"
+      "sha256": "ec1c198a4dbbc7f631345dba5a1be48a10148df98c668bd5adbabf8f72e6aa80"
     },
     {
       "id": "codex-context-used-meter",
       "name": "Codex Context Used Meter",
       "description": "在 Codex App 对话界面顶部显示当前会话剩余上下文、已用/总 token，并提供轻量进度条和消耗动画。",
-      "version": "36",
+      "version": "37",
       "author": "Minghou-Lei",
       "tags": [
         "context",
@@ -33,7 +33,7 @@
       ],
       "homepage": "https://github.com/Minghou-Lei/codex-context-used-meter",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-context-used-meter.js",
-      "sha256": "3016e31c4b5a0aa5c7b519fe2a4f507823f0264481b0094cd69ad21aa2b121ff"
+      "sha256": "a34ff0091c39d981acb86d6a7e12bc0ad0c63504f5aea3883dc1403ef5fcdb70"
     }
   ]
 }

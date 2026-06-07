@@ -4,7 +4,8 @@ import { resolve } from "node:path";
 
 const script = readFileSync(resolve("scripts/codex-context-used-meter.js"), "utf8");
 
-assert.match(script, /const SCRIPT_VERSION = 36;/, "script version should be bumped for the icon lock release");
+assert.match(script, /const SCRIPT_VERSION = 37;/, "script version should be bumped for the lower default placement release");
+assert.match(script, /const DEFAULT_CONTEXT_METER_TOP_PX = 96;/, "context meter should default below the very top edge");
 assert.match(script, /CONTEXT_METER_POSITION_STORAGE_KEY/, "context meter position should use a named persistent storage key");
 assert.match(script, /__codexContextMeterPlacement/, "context meter position should persist independently from reading state");
 assert.match(script, /localStorage/, "context meter lock state and coordinates should survive app restarts");
@@ -20,3 +21,5 @@ assert.doesNotMatch(script, /lock\.textContent\s*=\s*locked\s*\?\s*"锁"\s*:\s*"
 assert.match(script, /pointerdown|pointermove|pointerup/, "context meter should use pointer events for drag movement");
 assert.match(script, /data-placement="floating"/, "context meter should support a floating placement mode");
 assert.match(script, /applyMeterPlacement/, "context meter should apply stored placement when the root is created or refreshed");
+assert.match(script, /top: \$\{DEFAULT_CONTEXT_METER_TOP_PX\}px;/, "top-center CSS should use the lowered default top offset");
+assert.doesNotMatch(script, /top: max\(10px, env\(safe-area-inset-top\)\)/, "context meter should no longer default to the top edge");

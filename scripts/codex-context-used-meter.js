@@ -5,7 +5,8 @@
   const STYLE_ID = "codex-context-meter-style";
   const ROOT_ID = "codex-context-meter";
   const CAPTURE_STATE_KEY = "__codexContextMeterCaptureState";
-  const SCRIPT_VERSION = 36;
+  const SCRIPT_VERSION = 37;
+  const DEFAULT_CONTEXT_METER_TOP_PX = 96;
   const CONTEXT_METER_POSITION_STORAGE_KEY = "__codexContextMeterPlacement";
   const UPDATE_INTERVAL_MS = 5000;
   const SLOW_SCAN_INTERVAL_MS = 30000;
@@ -188,7 +189,7 @@
     style.textContent = `
       #${ROOT_ID} {
         position: fixed;
-        top: max(10px, env(safe-area-inset-top));
+        top: ${DEFAULT_CONTEXT_METER_TOP_PX}px;
         left: 50%;
         transform: translateX(-50%);
         z-index: 2147483647;
@@ -446,7 +447,7 @@
       mode: "top-center",
       locked: true,
       x: 0,
-      y: 10,
+      y: DEFAULT_CONTEXT_METER_TOP_PX,
     };
   }
 
