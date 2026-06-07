@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updated_at": "2026-06-07T11:33:39.000Z",
+  "updated_at": "2026-06-07T12:07:55.000Z",
   "scripts": [
     {
       "id": "codex-token-usage",
       "name": "Codex Token Usage",
       "description": "在 Codex 每次回复完成后显示本轮调用合计、输入输出、缓存命中、上下文用量和耗时，并支持按会话恢复历史统计。",
-      "version": "0.1.7",
+      "version": "0.1.8",
       "author": "Albert_Luo",
       "tags": [
         "codex",
@@ -17,7 +17,7 @@
       ],
       "homepage": "https://github.com/kokotao/codex-token-usage-script",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-token-usage.js",
-      "sha256": "9b572bf1f0d664e46628d5fa0c8a1e594d44296afc97fac1f3f3577fc27126e7"
+      "sha256": "d4c234cc12f76ead8da446e53223271695c652b821e2037466771b2e7e5d892f"
     },
     {
       "id": "codex-context-used-meter",
