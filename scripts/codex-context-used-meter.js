@@ -5,7 +5,7 @@
   const STYLE_ID = "codex-context-meter-style";
   const ROOT_ID = "codex-context-meter";
   const CAPTURE_STATE_KEY = "__codexContextMeterCaptureState";
-  const SCRIPT_VERSION = 33;
+  const SCRIPT_VERSION = 34;
   const UPDATE_INTERVAL_MS = 5000;
   const SLOW_SCAN_INTERVAL_MS = 30000;
   const SWITCH_RETRY_WINDOW_MS = 8000;
@@ -213,12 +213,63 @@
       }
 
       #${ROOT_ID} .ccm-value {
-        color: rgba(255, 255, 255, 0.98);
         font-weight: 650;
         font-variant-numeric: tabular-nums;
         overflow: hidden;
         text-align: center;
         text-overflow: ellipsis;
+      }
+
+      #${ROOT_ID} .ccm-value-main {
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 4px;
+        max-width: 100%;
+      }
+
+      #${ROOT_ID} .ccm-value-label {
+        color: rgba(226, 232, 240, 0.82);
+      }
+
+      #${ROOT_ID} .ccm-value-percent {
+        color: #7dd3fc;
+        font-weight: 800;
+        text-shadow: 0 0 14px rgba(125, 211, 252, 0.22);
+      }
+
+      #${ROOT_ID} .ccm-value-details {
+        color: rgba(203, 213, 225, 0.78);
+        font-weight: 620;
+      }
+
+      #${ROOT_ID}[data-color-level="fresh"] .ccm-value-percent {
+        color: #86efac;
+        text-shadow: 0 0 14px rgba(134, 239, 172, 0.22);
+      }
+
+      #${ROOT_ID}[data-color-level="fresh"] .ccm-value-label {
+        color: rgba(187, 247, 208, 0.86);
+      }
+
+      #${ROOT_ID}[data-color-level="warn"] .ccm-value-percent {
+        color: #fbbf24;
+        text-shadow: 0 0 14px rgba(251, 191, 36, 0.28);
+      }
+
+      #${ROOT_ID}[data-color-level="warn"] .ccm-value-label,
+      #${ROOT_ID}[data-color-level="warn"] .ccm-value-details {
+        color: rgba(254, 243, 199, 0.86);
+      }
+
+      #${ROOT_ID}[data-color-level="danger"] .ccm-value-percent {
+        color: #fb7185;
+        text-shadow: 0 0 16px rgba(251, 113, 133, 0.34);
+      }
+
+      #${ROOT_ID}[data-color-level="danger"] .ccm-value-label,
+      #${ROOT_ID}[data-color-level="danger"] .ccm-value-details {
+        color: rgba(254, 205, 211, 0.9);
       }
 
       #${ROOT_ID} .ccm-track {
@@ -311,9 +362,15 @@
     root.id = ROOT_ID;
     root.dataset.known = "false";
     root.dataset.level = "normal";
+    root.dataset.colorLevel = "normal";
     root.innerHTML = `
       <div class="ccm-row">
-        <span class="ccm-value">Context Left --</span>
+        <span class="ccm-value">
+          <span class="ccm-value-main">
+            <span class="ccm-value-label">Context Left</span>
+            <span class="ccm-value-percent">--</span>
+          </span>
+        </span>
       </div>
       <div class="ccm-track">
         <div class="ccm-fill"></div>
@@ -348,6 +405,47 @@
     if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
     return String(Math.round(value));
+  }
+
+  function contextColorLevel(usedPercent) {
+    const safePercent = clampPercent(usedPercent);
+    if (safePercent == null) return "normal";
+    if (safePercent >= 90) return "danger";
+    if (safePercent >= 75) return "warn";
+    if (safePercent <= 40) return "fresh";
+    return "normal";
+  }
+
+  function replaceContextValue(value, percentText, details) {
+    const main = document.createElement("span");
+    main.className = "ccm-value-main";
+
+    const label = document.createElement("span");
+    label.className = "ccm-value-label";
+    label.textContent = "Context Left";
+    main.appendChild(label);
+
+    const percent = document.createElement("span");
+    percent.className = "ccm-value-percent";
+    percent.textContent = percentText;
+    main.appendChild(percent);
+
+    if (details) {
+      const detailsElement = document.createElement("span");
+      detailsElement.className = "ccm-value-details";
+      detailsElement.textContent = details;
+      main.appendChild(detailsElement);
+    }
+
+    value.replaceChildren(main);
+  }
+
+  function renderContextValue(value, percentText, details) {
+    replaceContextValue(value, `${percentText}%`, details);
+  }
+
+  function renderEmptyContextValue(value) {
+    replaceContextValue(value, "--", "");
   }
 
   function showTokenSpendEffect(root, deltaTokens) {
@@ -399,8 +497,11 @@
   function hideMeter(root, value, fill, title) {
     if (root.dataset.known !== "false") root.dataset.known = "false";
     if (root.dataset.level !== "normal") root.dataset.level = "normal";
+    if (root.dataset.colorLevel !== "normal") root.dataset.colorLevel = "normal";
     if (root.title !== title) root.title = title;
-    if (value.textContent !== "Context Left --") value.textContent = "Context Left --";
+    if (value.textContent !== "Context Left --") {
+      renderEmptyContextValue(value);
+    }
     if (fill.style.width !== "0%") fill.style.width = "0%";
     root.hidden = true;
     root.querySelectorAll(".ccm-hit-pop").forEach((node) => node.remove());
@@ -2041,6 +2142,7 @@
     }
 
     const level = leftPercent <= 10 ? "danger" : leftPercent <= 25 ? "warn" : "normal";
+    const colorLevel = contextColorLevel(reading.percent);
     const title = `Source: ${reading.source}${reading.raw ? ` | ${reading.raw}` : ""}`;
     const text = `Context Left ${percentText}%${details}`;
     const width = `${leftPercent.toFixed(1)}%`;
@@ -2048,8 +2150,9 @@
     if (root.dataset.known !== "true") root.dataset.known = "true";
     if (root.hidden) root.hidden = false;
     if (root.dataset.level !== level) root.dataset.level = level;
+    if (root.dataset.colorLevel !== colorLevel) root.dataset.colorLevel = colorLevel;
     if (root.title !== title) root.title = title;
-    if (value.textContent !== text) value.textContent = text;
+    if (value.textContent !== text) renderContextValue(value, percentText, details);
     if (fill.style.width !== width) fill.style.width = width;
   }
 
