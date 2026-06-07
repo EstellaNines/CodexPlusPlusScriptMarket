@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-token-usage";
-  const SCRIPT_VERSION = "0.1.6";
+  const SCRIPT_VERSION = "0.1.7";
   const BADGE_CLASS = "codex-token-usage-badge";
   const STYLE_ID = "codex-token-usage-style";
   const RECENT_LIMIT = 20;
@@ -300,29 +300,60 @@
     return details;
   }
 
-  function formatBadgeText(metric) {
-    if (metric?.status === "running") return "运行中 · 正在统计本次回复 token...";
+  function badgePart(kind, text) {
+    return { kind, text };
+  }
+
+  function formatBadgeParts(metric) {
+    if (metric?.status === "running") {
+      return [badgePart("running", "运行中"), badgePart("muted", "正在统计本次回复 token...")];
+    }
     const usage = metric?.usage || {};
     const requestTotal = usage.requestTotalTokens || usage.totalTokens || 0;
     const estimatedLabel = usage.totalEstimated ? "(估算)" : "";
-    const parts = [`本轮调用合计 ${formatNumber(requestTotal)}${estimatedLabel}`];
+    const parts = [badgePart("total", `本轮调用合计 ${formatNumber(requestTotal)}${estimatedLabel}`)];
     if (usageHasBreakdown(usage)) {
       parts.push(
-        `输入 ${formatNumber(usage.inputTotalTokens || usage.inputTokens)}`,
-        `输出 ${formatNumber(usage.outputTotalTokens || usage.outputTokens)}`,
-        ...formatCacheDetails(usage),
+        badgePart("input", `输入 ${formatNumber(usage.inputTotalTokens || usage.inputTokens)}`),
+        badgePart("output", `输出 ${formatNumber(usage.outputTotalTokens || usage.outputTokens)}`),
+        ...formatCacheDetails(usage).map((text) => badgePart("cache", text)),
       );
     } else {
-      parts.push("输入 -", "输出 -");
+      parts.push(badgePart("input", "输入 -"), badgePart("output", "输出 -"));
     }
     if (usage.contextLimit) {
       const contextUsed = usage.contextUsed || usage.totalTokens;
       const contextPercent = usage.contextLimit ? ` (${((contextUsed / usage.contextLimit) * 100).toFixed(1)}%)` : "";
-      parts.push(`上下文 ${formatNumber(contextUsed)}/${formatNumber(usage.contextLimit)}${contextPercent}`);
+      parts.push(badgePart("context", `上下文 ${formatNumber(contextUsed)}/${formatNumber(usage.contextLimit)}${contextPercent}`));
     }
-    if (metric?.callCount >= 1) parts.push(`调用 ${formatNumber(metric.callCount)} 次`);
-    parts.push(`耗时 ${Number.isFinite(metric?.elapsedMs) && metric.elapsedMs > 0 ? formatSeconds(metric.elapsedMs) : "-"}`);
-    return parts.join(" · ");
+    if (metric?.callCount >= 1) parts.push(badgePart("calls", `调用 ${formatNumber(metric.callCount)} 次`));
+    parts.push(badgePart("elapsed", `耗时 ${Number.isFinite(metric?.elapsedMs) && metric.elapsedMs > 0 ? formatSeconds(metric.elapsedMs) : "-"}`));
+    return parts;
+  }
+
+  function formatBadgeText(metric) {
+    return formatBadgeParts(metric)
+      .map((part) => part.text)
+      .join(" · ");
+  }
+
+  function renderBadgeParts(badge, parts) {
+    const nodes = [];
+    parts.forEach((part, index) => {
+      if (index > 0) {
+        const separator = document.createElement("span");
+        separator.className = "codex-token-usage-separator";
+        separator.textContent = "·";
+        nodes.push(separator);
+      }
+
+      const span = document.createElement("span");
+      span.className = "codex-token-usage-part";
+      span.dataset.kind = part.kind;
+      span.textContent = part.text;
+      nodes.push(span);
+    });
+    badge.replaceChildren(...nodes);
   }
 
   function parseElapsedMs(text) {
@@ -1530,16 +1561,49 @@
       .${BADGE_CLASS} {
         display: inline-flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 6px;
         margin: 8px 0 0;
         padding: 5px 9px;
         border: 1px solid rgba(20, 184, 166, .3);
         border-radius: 7px;
         background: rgba(20, 184, 166, .08);
-        color: inherit;
+        color: rgba(226, 232, 240, .92);
         font: 12px/1.35 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         opacity: .9;
         letter-spacing: 0;
+      }
+      .${BADGE_CLASS} .codex-token-usage-separator {
+        color: rgba(148, 163, 184, .7);
+      }
+      .${BADGE_CLASS} .codex-token-usage-part {
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="total"] {
+        color: #bfdbfe;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="input"] {
+        color: #67e8f9;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="output"] {
+        color: #86efac;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="cache"] {
+        color: #c4b5fd;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="context"] {
+        color: #fdba74;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="calls"] {
+        color: #93c5fd;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="elapsed"],
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="running"] {
+        color: #fde68a;
+      }
+      .${BADGE_CLASS} .codex-token-usage-part[data-kind="muted"] {
+        color: rgba(203, 213, 225, .82);
       }
       .${BADGE_CLASS}[data-status="running"] {
         border-color: rgba(245, 158, 11, .36);
@@ -1693,7 +1757,7 @@
     badge.dataset.conversationId = displayMetric.conversationId || "";
     badge.dataset.version = SCRIPT_VERSION;
     badge.dataset.placement = target === document.querySelector("main") ? "fallback" : "message-actions";
-    badge.textContent = formatBadgeText(displayMetric);
+    renderBadgeParts(badge, formatBadgeParts(displayMetric));
     document.querySelectorAll(`.${BADGE_CLASS}`).forEach((node) => {
       if (node !== badge) node.remove();
     });
