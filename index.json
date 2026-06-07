@@ -16,8 +16,8 @@
         "cache"
       ],
       "homepage": "https://github.com/kokotao/codex-token-usage-script",
-      "script_url": "https://raw.githubusercontent.com/kokotao/codex-token-usage-script/main/scripts/codex-token-usage.js",
-      "sha256": ""
+      "script_url": "https://raw.githubusercontent.com/kokotao/codex-token-usage-script/4a69a0003d66944322ed625d0f59dac7d79b04d8/scripts/codex-token-usage.js",
+      "sha256": "2bffb40de30ed4406713b188682b8f1c9d21163a27fe5a03ad041bf20d6b0025"
     },
     {
       "id": "codex-context-used-meter",
@@ -32,8 +32,8 @@
         "meter"
       ],
       "homepage": "https://github.com/Minghou-Lei/codex-context-used-meter",
-      "script_url": "https://raw.githubusercontent.com/Minghou-Lei/codex-context-used-meter/main/codex-context-used-meter.js",
-      "sha256": ""
+      "script_url": "https://raw.githubusercontent.com/Minghou-Lei/codex-context-used-meter/7178b467ca8732f99904d5be666caa5699484c98/codex-context-used-meter.js",
+      "sha256": "7d1f79dd2f379bf25787ed1fc65778266fd286cd33966692708f985fe3adba7d"
     }
   ]
 }

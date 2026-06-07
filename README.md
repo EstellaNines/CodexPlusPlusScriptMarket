@@ -17,4 +17,4 @@ https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/in
 
 ## Format
 
-Each entry is a Codex++ market script. `script_url` points at the upstream author's raw script file so the market can track the original projects without vendoring their code.
+Each entry is a Codex++ market script. `script_url` points at a pinned upstream commit so the market can track the original projects without vendoring their code or drifting unexpectedly.
