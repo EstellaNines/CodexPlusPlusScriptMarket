@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 const script = readFileSync(resolve("scripts/codex-token-usage.js"), "utf8");
 
-assert.match(script, /const SCRIPT_VERSION = "0\.1\.11";/, "script version should be bumped for the root-container display fix");
+assert.match(script, /const SCRIPT_VERSION = "0\.1\.12";/, "script version should be bumped for the badge content fix");
 assert.match(script, /data-placement="message-actions"/, "badge should keep the fixed assistant-message placement");
 assert.match(script, /function isRootConversationContainer\(node\)/, "token usage should identify Codex root surfaces");
 assert.match(script, /if \(isRootConversationContainer\(node\)\) return -1;/, "root surfaces must not be scored as assistant messages");

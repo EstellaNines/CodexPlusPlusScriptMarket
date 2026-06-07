@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-token-usage";
-  const SCRIPT_VERSION = "0.1.11";
+  const SCRIPT_VERSION = "0.1.12";
   const BADGE_CLASS = "codex-token-usage-badge";
   const STYLE_ID = "codex-token-usage-style";
   const RECENT_LIMIT = 20;
@@ -355,6 +355,7 @@
       span.textContent = part.text;
       nodes.push(span);
     });
+    content.replaceChildren(...nodes);
     badge.replaceChildren(content);
   }
 
