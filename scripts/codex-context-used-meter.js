@@ -5,7 +5,7 @@
   const STYLE_ID = "codex-context-meter-style";
   const ROOT_ID = "codex-context-meter";
   const CAPTURE_STATE_KEY = "__codexContextMeterCaptureState";
-  const SCRIPT_VERSION = 37;
+  const SCRIPT_VERSION = 38;
   const DEFAULT_CONTEXT_METER_TOP_PX = 96;
   const CONTEXT_METER_POSITION_STORAGE_KEY = "__codexContextMeterPlacement";
   const UPDATE_INTERVAL_MS = 5000;
@@ -136,6 +136,9 @@
     retryTimer: 0,
     timer: 0,
     observer: null,
+    themeObserver: null,
+    themeMediaQuery: null,
+    themeMediaListener: null,
     navigationListener: null,
     pendingUpdate: 0,
     pendingUpdateDueAt: 0,
@@ -166,6 +169,55 @@
     meterDrag: null,
   };
 
+  function codexThemeFromDocument() {
+    const root = document.documentElement;
+    if (!root) return "";
+
+    const theme = String(root.getAttribute("data-theme") || "").trim().toLowerCase();
+    if (theme.startsWith("light")) return "light";
+    if (theme.startsWith("dark")) return "dark";
+    if (root.classList?.contains("light")) return "light";
+    if (root.classList?.contains("dark")) return "dark";
+    return "";
+  }
+
+  function resolveCodexTheme() {
+    const codexTheme = codexThemeFromDocument();
+    if (codexTheme) return codexTheme;
+    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+  }
+
+  function applyMeterTheme(root = state.root || document.getElementById(ROOT_ID)) {
+    if (!root) return "";
+    const theme = resolveCodexTheme();
+    if (root.dataset.theme !== theme) root.dataset.theme = theme;
+    return theme;
+  }
+
+  function handleMeterThemeChange() {
+    applyMeterTheme();
+  }
+
+  function installThemeObserver() {
+    if (!state.themeObserver && typeof MutationObserver === "function") {
+      state.themeObserver = new MutationObserver(handleMeterThemeChange);
+      state.themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class", "data-theme"],
+      });
+    }
+
+    if (!state.themeMediaQuery && typeof window.matchMedia === "function") {
+      state.themeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      state.themeMediaListener = handleMeterThemeChange;
+      if (typeof state.themeMediaQuery.addEventListener === "function") {
+        state.themeMediaQuery.addEventListener("change", state.themeMediaListener);
+      } else if (typeof state.themeMediaQuery.addListener === "function") {
+        state.themeMediaQuery.addListener(state.themeMediaListener);
+      }
+    }
+  }
+
   function getCaptureState() {
     let captureState = window[CAPTURE_STATE_KEY];
     if (!captureState || typeof captureState !== "object") {
@@ -187,6 +239,55 @@
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
+      #${ROOT_ID},
+      #${ROOT_ID}[data-theme="dark"] {
+        color-scheme: dark;
+        --ccm-surface-border: rgba(255, 255, 255, 0.16);
+        --ccm-surface-bg: rgba(20, 22, 28, 0.88);
+        --ccm-surface-text: rgba(255, 255, 255, 0.92);
+        --ccm-surface-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+        --ccm-lock-border: rgba(148, 163, 184, 0.34);
+        --ccm-lock-bg: rgba(15, 23, 42, 0.38);
+        --ccm-lock-text: rgba(226, 232, 240, 0.92);
+        --ccm-lock-hover-border: rgba(125, 211, 252, 0.64);
+        --ccm-lock-hover-bg: rgba(14, 165, 233, 0.2);
+        --ccm-value-label: rgba(226, 232, 240, 0.82);
+        --ccm-value-percent: #7dd3fc;
+        --ccm-value-percent-shadow: rgba(125, 211, 252, 0.22);
+        --ccm-value-details: rgba(203, 213, 225, 0.78);
+        --ccm-track-bg: rgba(255, 255, 255, 0.16);
+        --ccm-fill-normal: linear-gradient(90deg, #4ea1ff, #4ade80);
+        --ccm-fill-warn: linear-gradient(90deg, #f59e0b, #f97316);
+        --ccm-fill-danger: linear-gradient(90deg, #fb7185, #ef4444);
+        --ccm-hit-pop-gradient: linear-gradient(92deg, #fff7ed 0%, #fecdd3 38%, #fb7185 68%, #f97316 100%);
+        --ccm-hit-pop-filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.78)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.58)) drop-shadow(0 0 14px rgba(251, 113, 133, 0.56)) drop-shadow(0 0 26px rgba(249, 115, 22, 0.24));
+        --ccm-hit-pop-shadow: 0 0 1px rgba(255, 255, 255, 0.45);
+      }
+
+      #${ROOT_ID}[data-theme="light"] {
+        color-scheme: light;
+        --ccm-surface-border: rgba(15, 23, 42, 0.12);
+        --ccm-surface-bg: rgba(255, 255, 255, 0.92);
+        --ccm-surface-text: rgba(15, 23, 42, 0.92);
+        --ccm-surface-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);
+        --ccm-lock-border: rgba(100, 116, 139, 0.32);
+        --ccm-lock-bg: rgba(241, 245, 249, 0.82);
+        --ccm-lock-text: rgba(30, 41, 59, 0.9);
+        --ccm-lock-hover-border: rgba(14, 165, 233, 0.52);
+        --ccm-lock-hover-bg: rgba(224, 242, 254, 0.86);
+        --ccm-value-label: rgba(51, 65, 85, 0.78);
+        --ccm-value-percent: #0284c7;
+        --ccm-value-percent-shadow: rgba(2, 132, 199, 0.14);
+        --ccm-value-details: rgba(71, 85, 105, 0.72);
+        --ccm-track-bg: rgba(15, 23, 42, 0.12);
+        --ccm-fill-normal: linear-gradient(90deg, #0ea5e9, #22c55e);
+        --ccm-fill-warn: linear-gradient(90deg, #d97706, #ea580c);
+        --ccm-fill-danger: linear-gradient(90deg, #e11d48, #dc2626);
+        --ccm-hit-pop-gradient: linear-gradient(92deg, #7c2d12 0%, #be123c 42%, #e11d48 70%, #ea580c 100%);
+        --ccm-hit-pop-filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.9)) drop-shadow(0 3px 8px rgba(15, 23, 42, 0.18)) drop-shadow(0 0 14px rgba(225, 29, 72, 0.24));
+        --ccm-hit-pop-shadow: none;
+      }
+
       #${ROOT_ID} {
         position: fixed;
         top: ${DEFAULT_CONTEXT_METER_TOP_PX}px;
@@ -196,11 +297,11 @@
         min-width: 220px;
         max-width: min(420px, calc(100vw - 32px));
         padding: 8px 10px 9px;
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        border: 1px solid var(--ccm-surface-border);
         border-radius: 8px;
-        background: rgba(20, 22, 28, 0.88);
-        color: rgba(255, 255, 255, 0.92);
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+        background: var(--ccm-surface-bg);
+        color: var(--ccm-surface-text);
+        box-shadow: var(--ccm-surface-shadow);
         font: 12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         overflow: visible;
         pointer-events: auto;
@@ -234,10 +335,10 @@
         width: 22px;
         height: 22px;
         padding: 0;
-        border: 1px solid rgba(148, 163, 184, 0.34);
+        border: 1px solid var(--ccm-lock-border);
         border-radius: 5px;
-        background: rgba(15, 23, 42, 0.38);
-        color: rgba(226, 232, 240, 0.92);
+        background: var(--ccm-lock-bg);
+        color: var(--ccm-lock-text);
         font: 11px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         letter-spacing: 0;
         cursor: pointer;
@@ -255,8 +356,8 @@
       }
 
       #${ROOT_ID} .ccm-lock:hover {
-        border-color: rgba(125, 211, 252, 0.64);
-        background: rgba(14, 165, 233, 0.2);
+        border-color: var(--ccm-lock-hover-border);
+        background: var(--ccm-lock-hover-bg);
       }
 
       #${ROOT_ID} .ccm-value {
@@ -276,47 +377,58 @@
       }
 
       #${ROOT_ID} .ccm-value-label {
-        color: rgba(226, 232, 240, 0.82);
+        color: var(--ccm-value-label);
       }
 
       #${ROOT_ID} .ccm-value-percent {
-        color: #7dd3fc;
+        color: var(--ccm-value-percent);
         font-weight: 800;
-        text-shadow: 0 0 14px rgba(125, 211, 252, 0.22);
+        text-shadow: 0 0 14px var(--ccm-value-percent-shadow);
       }
 
       #${ROOT_ID} .ccm-value-details {
-        color: rgba(203, 213, 225, 0.78);
+        color: var(--ccm-value-details);
         font-weight: 620;
       }
 
-      #${ROOT_ID}[data-color-level="fresh"] .ccm-value-percent {
-        color: #86efac;
-        text-shadow: 0 0 14px rgba(134, 239, 172, 0.22);
+      #${ROOT_ID}[data-color-level="fresh"] {
+        --ccm-value-percent: #86efac;
+        --ccm-value-percent-shadow: rgba(134, 239, 172, 0.22);
+        --ccm-value-label: rgba(187, 247, 208, 0.86);
       }
 
-      #${ROOT_ID}[data-color-level="fresh"] .ccm-value-label {
-        color: rgba(187, 247, 208, 0.86);
+      #${ROOT_ID}[data-theme="light"][data-color-level="fresh"] {
+        --ccm-value-percent: #15803d;
+        --ccm-value-percent-shadow: rgba(21, 128, 61, 0.14);
+        --ccm-value-label: rgba(22, 101, 52, 0.82);
       }
 
-      #${ROOT_ID}[data-color-level="warn"] .ccm-value-percent {
-        color: #fbbf24;
-        text-shadow: 0 0 14px rgba(251, 191, 36, 0.28);
+      #${ROOT_ID}[data-color-level="warn"] {
+        --ccm-value-percent: #fbbf24;
+        --ccm-value-percent-shadow: rgba(251, 191, 36, 0.28);
+        --ccm-value-label: rgba(254, 243, 199, 0.86);
+        --ccm-value-details: rgba(254, 243, 199, 0.86);
       }
 
-      #${ROOT_ID}[data-color-level="warn"] .ccm-value-label,
-      #${ROOT_ID}[data-color-level="warn"] .ccm-value-details {
-        color: rgba(254, 243, 199, 0.86);
+      #${ROOT_ID}[data-theme="light"][data-color-level="warn"] {
+        --ccm-value-percent: #b45309;
+        --ccm-value-percent-shadow: rgba(180, 83, 9, 0.16);
+        --ccm-value-label: rgba(146, 64, 14, 0.84);
+        --ccm-value-details: rgba(146, 64, 14, 0.78);
       }
 
-      #${ROOT_ID}[data-color-level="danger"] .ccm-value-percent {
-        color: #fb7185;
-        text-shadow: 0 0 16px rgba(251, 113, 133, 0.34);
+      #${ROOT_ID}[data-color-level="danger"] {
+        --ccm-value-percent: #fb7185;
+        --ccm-value-percent-shadow: rgba(251, 113, 133, 0.34);
+        --ccm-value-label: rgba(254, 205, 211, 0.9);
+        --ccm-value-details: rgba(254, 205, 211, 0.9);
       }
 
-      #${ROOT_ID}[data-color-level="danger"] .ccm-value-label,
-      #${ROOT_ID}[data-color-level="danger"] .ccm-value-details {
-        color: rgba(254, 205, 211, 0.9);
+      #${ROOT_ID}[data-theme="light"][data-color-level="danger"] {
+        --ccm-value-percent: #be123c;
+        --ccm-value-percent-shadow: rgba(190, 18, 60, 0.18);
+        --ccm-value-label: rgba(159, 18, 57, 0.84);
+        --ccm-value-details: rgba(159, 18, 57, 0.78);
       }
 
       #${ROOT_ID} .ccm-track {
@@ -324,23 +436,23 @@
         height: 7px;
         overflow: hidden;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.16);
+        background: var(--ccm-track-bg);
       }
 
       #${ROOT_ID} .ccm-fill {
         width: 0%;
         height: 100%;
         border-radius: inherit;
-        background: linear-gradient(90deg, #4ea1ff, #4ade80);
+        background: var(--ccm-fill-normal);
         transition: width 180ms ease, background 180ms ease;
       }
 
       #${ROOT_ID}[data-level="warn"] .ccm-fill {
-        background: linear-gradient(90deg, #f59e0b, #f97316);
+        background: var(--ccm-fill-warn);
       }
 
       #${ROOT_ID}[data-level="danger"] .ccm-fill {
-        background: linear-gradient(90deg, #fb7185, #ef4444);
+        background: var(--ccm-fill-danger);
       }
 
       #${ROOT_ID}[hidden] {
@@ -352,8 +464,8 @@
         right: calc(100% + 10px);
         top: 50%;
         z-index: 1;
-        color: #fff7ed;
-        background: linear-gradient(92deg, #fff7ed 0%, #fecdd3 38%, #fb7185 68%, #f97316 100%);
+        color: var(--ccm-value-percent);
+        background: var(--ccm-hit-pop-gradient);
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -361,11 +473,8 @@
         font-weight: 850;
         line-height: 1;
         opacity: 0;
-        filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.78))
-          drop-shadow(0 3px 8px rgba(0, 0, 0, 0.58))
-          drop-shadow(0 0 14px rgba(251, 113, 133, 0.56))
-          drop-shadow(0 0 26px rgba(249, 115, 22, 0.24));
-        text-shadow: 0 0 1px rgba(255, 255, 255, 0.45);
+        filter: var(--ccm-hit-pop-filter);
+        text-shadow: var(--ccm-hit-pop-shadow);
         transform: translate(44px, -50%) scale(0.72);
         transform-origin: right center;
         animation: ccm-hit-pop 3000ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
@@ -409,6 +518,7 @@
       state.root = root;
       state.value = root.querySelector(".ccm-value");
       state.fill = root.querySelector(".ccm-fill");
+      applyMeterTheme(root);
       wireMeterPlacementControls(root);
       applyMeterPlacement(root);
       return root;
@@ -437,6 +547,7 @@
     state.root = root;
     state.value = root.querySelector(".ccm-value");
     state.fill = root.querySelector(".ccm-fill");
+    applyMeterTheme(root);
     wireMeterPlacementControls(root);
     applyMeterPlacement(root);
     return root;
@@ -2499,6 +2610,14 @@
       state.pendingUpdateDueAt = 0;
       clearRetryUpdate();
       if (state.observer) state.observer.disconnect();
+      if (state.themeObserver) state.themeObserver.disconnect();
+      if (state.themeMediaQuery && state.themeMediaListener) {
+        if (typeof state.themeMediaQuery.removeEventListener === "function") {
+          state.themeMediaQuery.removeEventListener("change", state.themeMediaListener);
+        } else if (typeof state.themeMediaQuery.removeListener === "function") {
+          state.themeMediaQuery.removeListener(state.themeMediaListener);
+        }
+      }
       if (state.navigationListener) {
         document.removeEventListener("pointerdown", state.navigationListener, true);
         document.removeEventListener("click", state.navigationListener, true);
@@ -2541,6 +2660,7 @@
   installFetchCapture();
   installWebSocketCapture();
   installPostMessageCapture();
+  installThemeObserver();
   updateMeter();
   installObserver();
   state.timer = window.setInterval(updateMeter, UPDATE_INTERVAL_MS);

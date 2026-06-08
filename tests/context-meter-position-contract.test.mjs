@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 const script = readFileSync(resolve("scripts/codex-context-used-meter.js"), "utf8");
 
-assert.match(script, /const SCRIPT_VERSION = 37;/, "script version should be bumped for the lower default placement release");
+assert.match(script, /const SCRIPT_VERSION = 38;/, "script version should be bumped for the dual-theme release");
 assert.match(script, /const DEFAULT_CONTEXT_METER_TOP_PX = 96;/, "context meter should default below the very top edge");
 assert.match(script, /CONTEXT_METER_POSITION_STORAGE_KEY/, "context meter position should use a named persistent storage key");
 assert.match(script, /__codexContextMeterPlacement/, "context meter position should persist independently from reading state");
