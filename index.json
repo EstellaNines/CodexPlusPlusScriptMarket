@@ -38,8 +38,8 @@
     {
       "id": "codex-main-transparency",
       "name": "Codex Main Transparency",
-      "description": "Make the Codex transparent main interface use glass-like materials while keeping the sidebar untouched.",
-      "version": "0.1.6",
+      "description": "Make the Codex transparent main interface use glass-like materials with a live opacity slider while keeping the sidebar untouched.",
+      "version": "0.1.7",
       "author": "EstellaNines",
       "tags": [
         "codex",
@@ -49,7 +49,7 @@
       ],
       "homepage": "https://github.com/EstellaNines/CodexPlusPlusScriptMarket",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-main-transparency.js",
-      "sha256": "0e56b55b0dbd85e44a870aba5672907b4cd03d127af0cafafff1ad2cc0798510"
+      "sha256": "70c9449422db7764208e5f1dbc6112f2bce72b3f0951bef0ea6b2720b6383ddc"
     }
   ]
 }
