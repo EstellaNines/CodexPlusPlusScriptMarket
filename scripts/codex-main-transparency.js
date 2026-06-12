@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.1.5";
+  const SCRIPT_VERSION = "0.1.6";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
@@ -165,12 +165,22 @@
       }
 
       html[data-codex-main-transparency="true"] [class*="thread-content-max-width"],
+      html[data-codex-main-transparency="true"] main[class*="main-surface"],
+      html[data-codex-main-transparency="true"] [class*="main-surface"],
+      html[data-codex-main-transparency="true"] [class*="app-header-tint"],
+      html[data-codex-main-transparency="true"] [class*="app-shell-main-content-viewport"],
+      html[data-codex-main-transparency="true"] [class*="app-shell-main-content-frame"],
       html[data-codex-main-transparency="true"] [class*="h-\\[39\\%\\]"],
       html[data-codex-main-transparency="true"] [class*="multilineSurface"],
       html[data-codex-main-transparency="true"] [class*="bg-token-input-background"],
       html[data-codex-main-transparency="true"] [class*="bg-token-main-surface-primary"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-bg-fog"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-dropdown-background"],
       html[data-codex-main-transparency="true"] [class*="electron\\:bg-token-main-surface-primary"],
       html[data-codex-main-transparency="true"] [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] main [contenteditable="true"],
+      html[data-codex-main-transparency="true"] main [data-codex-composer],
+      html[data-codex-main-transparency="true"] main .ProseMirror,
       html[data-codex-main-transparency="true"] main [class*="backdrop-blur"],
       html[data-codex-main-transparency="true"] [role="main"] [class*="backdrop-blur"],
       html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout] [class*="backdrop-blur"],
@@ -184,6 +194,15 @@
         box-shadow: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
+      }
+
+      html[data-codex-main-transparency="true"] main [class*="after:bg-token-foreground"]::after,
+      html[data-codex-main-transparency="true"] main [class*="hover:after:bg-token-foreground"]::after,
+      html[data-codex-main-transparency="true"] main [class*="group-hover/title:after:bg-token-foreground"]::after,
+      html[data-codex-main-transparency="true"] main [class*="data-[state=open]:after:bg-token-foreground"]::after {
+        background: var(--cmt-page-clear) !important;
+        background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
       }
 
       html[data-codex-main-transparency="true"] main button:hover,
