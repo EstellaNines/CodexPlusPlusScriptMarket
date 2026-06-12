@@ -14,7 +14,7 @@ https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/in
 | --- | --- | --- | --- |
 | Codex Token Usage | 0.1.12 | 彩色 token 指标；固定随最新 Codex 回复显示，并修复徽标空框不显示文字。 | https://github.com/kokotao/codex-token-usage-script |
 | Codex Context Used Meter | 38 | 彩色上下文用量文字；自动跟随 Codex 浅色/深色主题；默认从顶部下移显示；支持锁定/解锁图标按钮与持久化拖动位置。 | https://github.com/Minghou-Lei/codex-context-used-meter |
-| Codex Main Transparency | 0.1.7 | 让 Codex 主界面使用接近侧边栏的透明玻璃材质；新增当次生效的透明度滑块，不额外写入位置或开关状态。 | https://github.com/EstellaNines/CodexPlusPlusScriptMarket |
+| Codex Main Transparency | 0.1.9 | 修正透明度语义：100% 即 fully transparent，全清 Codex 主界面遮罩、阴影、blur 与大块背景；保留轻量透明度滑块与运行时透明审计。 | https://github.com/EstellaNines/CodexPlusPlusScriptMarket |
 
 ## 使用方式
 
@@ -27,7 +27,7 @@ https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/in
 - Context Used Meter 点击右侧锁形图标后进入解锁移动状态。
 - Context Used Meter 拖动到目标位置后，再次点击图标锁定。
 - Context Used Meter 的位置保存在浏览器 `localStorage` 中，重启 Codex 后继续沿用。
-- Codex Main Transparency 只覆盖主界面、消息流、输入区与浮层材质，尽量保留侧边栏原有外观。
+- Codex Main Transparency 默认清除主界面、消息流、输入区与主区浮层的遮罩、阴影、blur 与大块背景；透明度滑块中 100% 表示完全透明，0% 表示显示调试材质，侧边栏仍尽量保留原有外观。
 
 ## 文件
 

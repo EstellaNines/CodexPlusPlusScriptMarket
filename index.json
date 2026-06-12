@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-12T00:00:00.000Z",
+  "updated_at": "2026-06-12T16:26:27.000Z",
   "scripts": [
     {
       "id": "codex-token-usage",
@@ -17,7 +17,7 @@
       ],
       "homepage": "https://github.com/kokotao/codex-token-usage-script",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-token-usage.js",
-      "sha256": "c27d6f82b0f5363be434c2f2c1a95c618a185a7e6e3cb0a5726a63b3aa1adeeb"
+      "sha256": "4a89bfddeda448484eeb55f1a2dc7e85b9ccdc907b6b313d8dcc2def31c78ccb"
     },
     {
       "id": "codex-context-used-meter",
@@ -38,8 +38,8 @@
     {
       "id": "codex-main-transparency",
       "name": "Codex Main Transparency",
-      "description": "Make the Codex transparent main interface use glass-like materials with a live opacity slider while keeping the sidebar untouched.",
-      "version": "0.1.7",
+      "description": "Make the Codex main interface fully transparent at 100%, remove main-area masks, shadows, and blur panels, and keep a compact live transparency slider for temporary tuning.",
+      "version": "0.1.9",
       "author": "EstellaNines",
       "tags": [
         "codex",
@@ -49,7 +49,7 @@
       ],
       "homepage": "https://github.com/EstellaNines/CodexPlusPlusScriptMarket",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-main-transparency.js",
-      "sha256": "70c9449422db7764208e5f1dbc6112f2bce72b3f0951bef0ea6b2720b6383ddc"
+      "sha256": "78f0d8eb2e6bfeb38543e0b8389a5bf5d0f52948e7c9839404b4f69d236a9914"
     }
   ]
 }

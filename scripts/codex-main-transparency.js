@@ -2,13 +2,15 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.1.7";
+  const SCRIPT_VERSION = "0.1.9";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
   const CONTROL_ID = "codex-main-transparency-control";
+  const AUDIT_EXCLUDE_SELECTOR = `#${CONTROL_ID}`;
   const TOP_FADE_SELECTOR = "[data-app-shell-main-content-top-fade]";
-  const DEFAULT_OPACITY_PERCENT = 100;
+  const DEFAULT_TRANSPARENCY_PERCENT = 100;
+  const AUDIT_MAX_ISSUES = 40;
 
   const glassChannels = {
     mainDark: "17, 24, 39",
@@ -21,6 +23,8 @@
     hoverLight: "15, 23, 42",
     shadowDark: "0, 0, 0",
     shadowLight: "15, 23, 42",
+    controlDark: "15, 23, 42",
+    controlLight: "255, 255, 255",
   };
 
   const glassAlpha = {
@@ -34,6 +38,8 @@
     hoverLight: 0.05,
     shadowDark: 0.18,
     shadowLight: 0.12,
+    controlDark: 0.72,
+    controlLight: 0.82,
   };
 
   if (window[INSTALL_KEY]) {
@@ -51,44 +57,53 @@
     themeMediaQuery: null,
     themeMediaListener: null,
     refreshTimer: 0,
-    opacityPercent: DEFAULT_OPACITY_PERCENT,
+    transparencyPercent: DEFAULT_TRANSPARENCY_PERCENT,
   };
 
-  function clampOpacityPercent(value) {
+  function clampTransparencyPercent(value) {
     const number = Number.parseInt(String(value), 10);
-    if (!Number.isFinite(number)) return DEFAULT_OPACITY_PERCENT;
+    if (!Number.isFinite(number)) return DEFAULT_TRANSPARENCY_PERCENT;
     return Math.min(100, Math.max(0, number));
   }
 
-  function scaleAlpha(alpha, opacityPercent) {
-    return Number((alpha * opacityPercent / 100).toFixed(3));
+  function materialPercentFromTransparency(transparencyPercent) {
+    return 100 - clampTransparencyPercent(transparencyPercent);
+  }
+
+  function scaleAlpha(alpha, materialPercent) {
+    return Number((alpha * materialPercent / 100).toFixed(3));
   }
 
   function rgba(channel, alpha) {
     return `rgba(${channel}, ${alpha})`;
   }
 
-  function applyGlassOpacity(value) {
+  function applyTransparency(value) {
     const root = document.documentElement;
-    if (!root) return DEFAULT_OPACITY_PERCENT;
-    const opacityPercent = clampOpacityPercent(value);
-    state.opacityPercent = opacityPercent;
+    if (!root) return DEFAULT_TRANSPARENCY_PERCENT;
+    const transparencyPercent = clampTransparencyPercent(value);
+    const materialPercent = materialPercentFromTransparency(transparencyPercent);
+    state.transparencyPercent = transparencyPercent;
     const style = root.style;
     const theme = resolveCodexTheme();
     const themed = theme === "light" ? "Light" : "Dark";
-    style.setProperty("--cmt-main-glass-dark", rgba(glassChannels.mainDark, scaleAlpha(glassAlpha.mainDark, opacityPercent)));
-    style.setProperty("--cmt-main-glass-light", rgba(glassChannels.mainLight, scaleAlpha(glassAlpha.mainLight, opacityPercent)));
-    style.setProperty("--cmt-panel-glass", rgba(glassChannels[`panel${themed}`], scaleAlpha(glassAlpha[`panel${themed}`], opacityPercent)));
-    style.setProperty("--cmt-input-glass", rgba(glassChannels[`input${themed}`], scaleAlpha(glassAlpha[`input${themed}`], opacityPercent)));
-    style.setProperty("--cmt-hover-glass", rgba(glassChannels[`hover${themed}`], scaleAlpha(glassAlpha[`hover${themed}`], opacityPercent)));
-    style.setProperty("--cmt-shadow-glass", `0 18px 54px ${rgba(glassChannels[`shadow${themed}`], scaleAlpha(glassAlpha[`shadow${themed}`], opacityPercent))}`);
-    root.dataset.codexMainTransparencyOpacity = String(opacityPercent);
+    style.setProperty("--cmt-main-glass-dark", rgba(glassChannels.mainDark, scaleAlpha(glassAlpha.mainDark, materialPercent)));
+    style.setProperty("--cmt-main-glass-light", rgba(glassChannels.mainLight, scaleAlpha(glassAlpha.mainLight, materialPercent)));
+    style.setProperty("--cmt-panel-glass", rgba(glassChannels[`panel${themed}`], scaleAlpha(glassAlpha[`panel${themed}`], materialPercent)));
+    style.setProperty("--cmt-input-glass", rgba(glassChannels[`input${themed}`], scaleAlpha(glassAlpha[`input${themed}`], materialPercent)));
+    style.setProperty("--cmt-hover-glass", rgba(glassChannels[`hover${themed}`], scaleAlpha(glassAlpha[`hover${themed}`], materialPercent)));
+    const shadowAlpha = scaleAlpha(glassAlpha[`shadow${themed}`], materialPercent);
+    style.setProperty("--cmt-shadow-glass", shadowAlpha > 0 ? `0 18px 54px ${rgba(glassChannels[`shadow${themed}`], shadowAlpha)}` : "none");
+    style.setProperty("--cmt-control-bg", rgba(glassChannels[`control${themed}`], glassAlpha[`control${themed}`]));
+    style.setProperty("--cmt-control-shadow", theme === "light" ? "0 8px 28px rgba(15, 23, 42, 0.12)" : "0 8px 28px rgba(0, 0, 0, 0.24)");
+    root.dataset.codexMainTransparencyOpacity = String(transparencyPercent);
+    root.dataset.codexMainTransparencyPercent = String(transparencyPercent);
     const control = document.getElementById(CONTROL_ID);
-    const output = control?.querySelector?.("[data-codex-main-transparency-opacity-value]");
+    const output = control?.querySelector?.("[data-codex-main-transparency-percent-value], [data-codex-main-transparency-opacity-value]");
     const range = control?.querySelector?.("input[type='range']");
-    if (output) output.textContent = `${opacityPercent}%`;
-    if (range && range.value !== String(opacityPercent)) range.value = String(opacityPercent);
-    return opacityPercent;
+    if (output) output.textContent = `${transparencyPercent}%`;
+    if (range && range.value !== String(transparencyPercent)) range.value = String(transparencyPercent);
+    return transparencyPercent;
   }
 
   function resolveCodexTheme() {
@@ -114,24 +129,27 @@
       /* root coverage: html, body, #root, main */
       html[data-codex-main-transparency="true"] {
         --cmt-page-clear: rgba(0, 0, 0, 0);
-        --cmt-main-glass-dark: rgba(17, 24, 39, 0.36);
-        --cmt-main-glass-light: rgba(255, 255, 255, 0.08);
+        --cmt-main-glass-dark: rgba(17, 24, 39, 0);
+        --cmt-main-glass-light: rgba(255, 255, 255, 0);
         --cmt-main-glass: var(--cmt-main-glass-dark);
-        --cmt-panel-glass: rgba(17, 24, 39, 0.28);
+        --cmt-panel-glass: rgba(17, 24, 39, 0);
         --cmt-border-glass: rgba(255, 255, 255, 0.12);
-        --cmt-input-glass: rgba(15, 23, 42, 0.42);
-        --cmt-hover-glass: rgba(255, 255, 255, 0.07);
-        --cmt-shadow-glass: 0 18px 54px rgba(0, 0, 0, 0.18);
+        --cmt-input-glass: rgba(15, 23, 42, 0);
+        --cmt-hover-glass: rgba(255, 255, 255, 0);
+        --cmt-shadow-glass: none;
+        --cmt-control-bg: rgba(15, 23, 42, 0.72);
+        --cmt-control-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
         background: var(--cmt-page-clear) !important;
       }
 
       html[data-codex-main-transparency="true"][data-codex-main-transparency-theme="light"] {
         --cmt-main-glass: var(--cmt-main-glass-light);
-        --cmt-panel-glass: rgba(255, 255, 255, 0.18);
+        --cmt-panel-glass: rgba(255, 255, 255, 0);
         --cmt-border-glass: rgba(15, 23, 42, 0.1);
-        --cmt-input-glass: rgba(255, 255, 255, 0.34);
-        --cmt-hover-glass: rgba(15, 23, 42, 0.05);
-        --cmt-shadow-glass: 0 18px 54px rgba(15, 23, 42, 0.12);
+        --cmt-input-glass: rgba(255, 255, 255, 0);
+        --cmt-hover-glass: rgba(15, 23, 42, 0);
+        --cmt-control-bg: rgba(255, 255, 255, 0.82);
+        --cmt-control-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
       }
 
       html[data-codex-main-transparency="true"] body,
@@ -152,6 +170,8 @@
         background: var(--cmt-page-clear) !important;
         background-color: var(--cmt-page-clear) !important;
         box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
 
       html[data-codex-main-transparency="true"] main > *,
@@ -166,6 +186,8 @@
         background: var(--cmt-page-clear) !important;
         background-color: var(--cmt-page-clear) !important;
         box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
 
       html[data-codex-main-transparency="true"] main [class*="bg-token-"],
@@ -185,7 +207,9 @@
       html[data-codex-main-transparency="true"] [data-above-composer-portal] ~ *,
       html[data-codex-main-transparency="true"] [class*="bg-token-input-background"],
       html[data-codex-main-transparency="true"] [class*="electron\\:bg-token-main-surface-primary"],
-      html[data-codex-main-transparency="true"] [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] main [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] [role="main"] [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout] [class*="bg-token-side-bar-background"],
       html[data-codex-main-transparency="true"] [data-home-ambient-suggestions],
       html[data-codex-main-transparency="true"] [data-home-ambient-suggestions] > *,
       html[data-codex-main-transparency="true"] [data-home-ambient-suggestions] button {
@@ -193,6 +217,8 @@
         background: var(--cmt-page-clear) !important;
         background-color: var(--cmt-page-clear) !important;
         box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
 
       html[data-codex-main-transparency="true"] [style*="color-background-panel"],
@@ -218,16 +244,21 @@
       html[data-codex-main-transparency="true"] main textarea,
       html[data-codex-main-transparency="true"] main [contenteditable="true"] {
         border-color: var(--cmt-border-glass) !important;
-        background: var(--cmt-panel-glass) !important;
-        box-shadow: var(--cmt-shadow-glass);
-        backdrop-filter: blur(18px) saturate(1.18);
-        -webkit-backdrop-filter: blur(18px) saturate(1.18);
+        background: var(--cmt-page-clear) !important;
+        background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
 
       html[data-codex-main-transparency="true"] main textarea,
       html[data-codex-main-transparency="true"] main [contenteditable="true"],
       html[data-codex-main-transparency="true"] main form:has(textarea) {
-        background: var(--cmt-input-glass) !important;
+        background: var(--cmt-page-clear) !important;
+        background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
 
       html[data-codex-main-transparency="true"] [class*="thread-content-max-width"],
@@ -243,7 +274,9 @@
       html[data-codex-main-transparency="true"] [class*="bg-token-bg-fog"],
       html[data-codex-main-transparency="true"] [class*="bg-token-dropdown-background"],
       html[data-codex-main-transparency="true"] [class*="electron\\:bg-token-main-surface-primary"],
-      html[data-codex-main-transparency="true"] [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] main [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] [role="main"] [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout] [class*="bg-token-side-bar-background"],
       html[data-codex-main-transparency="true"] main [contenteditable="true"],
       html[data-codex-main-transparency="true"] main [data-codex-composer],
       html[data-codex-main-transparency="true"] main .ProseMirror,
@@ -284,9 +317,11 @@
       html[data-codex-main-transparency="true"] [class*="popover"],
       html[data-codex-main-transparency="true"] [class*="menu"] {
         border-color: var(--cmt-border-glass) !important;
-        background: var(--cmt-main-glass) !important;
-        backdrop-filter: blur(20px) saturate(1.2);
-        -webkit-backdrop-filter: blur(20px) saturate(1.2);
+        background: var(--cmt-page-clear) !important;
+        background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
 
       html[data-codex-main-transparency="true"] main ::-webkit-scrollbar-track {
@@ -295,22 +330,28 @@
 
       #codex-main-transparency-control {
         position: fixed;
-        right: 18px;
-        bottom: 18px;
+        right: 12px;
+        bottom: 12px;
         z-index: 60;
         display: flex;
         align-items: center;
-        gap: 8px;
-        width: min(260px, calc(100vw - 36px));
-        padding: 8px 10px;
+        gap: 6px;
+        width: min(190px, calc(100vw - 24px));
+        padding: 5px 8px;
         border: 1px solid var(--cmt-border-glass);
         border-radius: 999px;
-        background: var(--cmt-main-glass) !important;
+        background: var(--cmt-control-bg) !important;
         color: var(--text-primary, currentColor);
-        box-shadow: var(--cmt-shadow-glass);
-        backdrop-filter: blur(18px) saturate(1.18);
-        -webkit-backdrop-filter: blur(18px) saturate(1.18);
+        box-shadow: var(--cmt-control-shadow);
+        opacity: 0.76;
+        backdrop-filter: blur(10px) saturate(1.08);
+        -webkit-backdrop-filter: blur(10px) saturate(1.08);
         font: 12px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      #codex-main-transparency-control:hover,
+      #codex-main-transparency-control:focus-within {
+        opacity: 1;
       }
 
       #codex-main-transparency-control label {
@@ -318,7 +359,7 @@
         min-width: 0;
         flex: 1;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
       }
 
       #codex-main-transparency-control span {
@@ -348,23 +389,114 @@
       range.min = "0";
       range.max = "100";
       range.step = "1";
-      range.value = String(state.opacityPercent);
+      range.value = String(state.transparencyPercent);
       const value = document.createElement("span");
       value.dataset.codexMainTransparencyOpacityValue = "true";
+      value.dataset.codexMainTransparencyPercentValue = "true";
       label.append(name, range, value);
       control.append(label);
       range.addEventListener("input", () => {
-        applyGlassOpacity(range.value);
+        applyTransparency(range.value);
       });
       document.body?.appendChild(control);
     }
-    applyGlassOpacity(state.opacityPercent);
+    applyTransparency(state.transparencyPercent);
   }
 
   function removeTopFades() {
     document.querySelectorAll(TOP_FADE_SELECTOR).forEach((element) => {
       element.remove();
     });
+  }
+
+  function isTransparentColor(value) {
+    const color = String(value || "").trim().toLowerCase();
+    if (!color || color === "transparent") return true;
+    const compact = color.replace(/\s+/g, "");
+    if (compact === "rgba(0,0,0,0)") return true;
+    const rgba = compact.match(/^rgba\((?:[^,]+,){3}([^)]+)\)$/);
+    return rgba ? Number.parseFloat(rgba[1]) === 0 : false;
+  }
+
+  function isClearLayer(value) {
+    const layer = String(value || "").trim().toLowerCase();
+    return !layer || layer === "none";
+  }
+
+  function isLargeRectangle(element) {
+    const rect = element.getBoundingClientRect?.();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+    const viewportWidth = Math.max(document.documentElement?.clientWidth || 0, window.innerWidth || 0);
+    const viewportHeight = Math.max(document.documentElement?.clientHeight || 0, window.innerHeight || 0);
+    const area = rect.width * rect.height;
+    const viewportArea = Math.max(1, viewportWidth * viewportHeight);
+    return rect.width >= Math.min(320, viewportWidth * 0.34) && rect.height >= 72 && area >= viewportArea * 0.025;
+  }
+
+  function describeElement(element, reason, style) {
+    const rect = element.getBoundingClientRect?.();
+    return {
+      reason,
+      tag: element.tagName?.toLowerCase?.() || "",
+      id: element.id || "",
+      className: String(element.className || "").slice(0, 160),
+      role: element.getAttribute?.("role") || "",
+      testId: element.getAttribute?.("data-testid") || "",
+      backgroundColor: style.backgroundColor,
+      backgroundImage: style.backgroundImage,
+      boxShadow: style.boxShadow,
+      backdropFilter: style.backdropFilter || style.webkitBackdropFilter || "none",
+      borderRadius: style.borderRadius,
+      rect: rect ? {
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      } : null,
+    };
+  }
+
+  function auditTransparency() {
+    const roots = [
+      ...document.querySelectorAll("main, [role='main'], [data-app-shell-main-content-layout], [data-above-composer-portal], [data-above-composer-queue-portal], [role='dialog'], [data-radix-popper-content-wrapper], [data-side]"),
+    ];
+    const elements = new Set();
+    roots.forEach((root) => {
+      if (!(root instanceof Element)) return;
+      elements.add(root);
+      root.querySelectorAll?.("*").forEach((element) => elements.add(element));
+    });
+
+    const issues = [];
+    let checked = 0;
+    elements.forEach((element) => {
+      if (!(element instanceof Element)) return;
+      if (element.closest(AUDIT_EXCLUDE_SELECTOR)) return;
+      if (["SCRIPT", "STYLE", "LINK", "META"].includes(element.tagName)) return;
+      checked += 1;
+      const style = window.getComputedStyle(element);
+      const hasBackground = !isTransparentColor(style.backgroundColor) || !isClearLayer(style.backgroundImage);
+      const hasShadow = !isClearLayer(style.boxShadow);
+      const hasBackdrop = !isClearLayer(style.backdropFilter) || !isClearLayer(style.webkitBackdropFilter);
+      if ((hasBackground && isLargeRectangle(element)) || hasShadow || hasBackdrop) {
+        const reasons = [];
+        if (hasBackground && isLargeRectangle(element)) reasons.push("large-background");
+        if (hasShadow) reasons.push("box-shadow");
+        if (hasBackdrop) reasons.push("backdrop-filter");
+        issues.push(describeElement(element, reasons.join(","), style));
+      }
+    });
+
+    return {
+      ok: issues.length === 0,
+      version: SCRIPT_VERSION,
+      opacityPercent: state.transparencyPercent,
+      transparencyPercent: state.transparencyPercent,
+      materialPercent: materialPercentFromTransparency(state.transparencyPercent),
+      checked,
+      issueCount: issues.length,
+      issues: issues.slice(0, AUDIT_MAX_ISSUES),
+    };
   }
 
   function refresh() {
@@ -374,7 +506,7 @@
     if (!root) return;
     root.dataset.codexMainTransparency = "true";
     root.dataset.codexMainTransparencyTheme = resolveCodexTheme();
-    applyGlassOpacity(state.opacityPercent);
+    applyTransparency(state.transparencyPercent);
     installOpacityControl();
   }
 
@@ -441,10 +573,13 @@
       "--cmt-input-glass",
       "--cmt-hover-glass",
       "--cmt-shadow-glass",
+      "--cmt-control-bg",
+      "--cmt-control-shadow",
     ].forEach((name) => document.documentElement.style.removeProperty(name));
     delete document.documentElement.dataset.codexMainTransparency;
     delete document.documentElement.dataset.codexMainTransparencyTheme;
     delete document.documentElement.dataset.codexMainTransparencyOpacity;
+    delete document.documentElement.dataset.codexMainTransparencyPercent;
     delete window[INSTALL_KEY];
     delete window[API_KEY];
   }
@@ -455,6 +590,7 @@
     version: SCRIPT_VERSION,
     refresh,
     destroy,
+    audit: auditTransparency,
     theme: resolveCodexTheme,
   };
 
