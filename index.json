@@ -39,7 +39,7 @@
       "id": "codex-main-transparency",
       "name": "Codex Main Transparency",
       "description": "Make the Codex transparent main interface use glass-like materials while keeping the sidebar untouched.",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "author": "EstellaNines",
       "tags": [
         "codex",
@@ -49,7 +49,7 @@
       ],
       "homepage": "https://github.com/EstellaNines/CodexPlusPlusScriptMarket",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-main-transparency.js",
-      "sha256": "b91b75c608677b7b413557fe91cf8a85e0720bb1bc5ea0ff2272639bbba483cc"
+      "sha256": "8bf7d51404c7412b7d5df6f90ee69a2b230405e1fedfe71c5b331e4e433ed14d"
     }
   ]
 }

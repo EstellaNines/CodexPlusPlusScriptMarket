@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.1.3";
+  const SCRIPT_VERSION = "0.1.4";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
@@ -123,6 +123,18 @@
       html[data-codex-main-transparency="true"] [data-home-ambient-suggestions],
       html[data-codex-main-transparency="true"] [data-home-ambient-suggestions] > *,
       html[data-codex-main-transparency="true"] [data-home-ambient-suggestions] button {
+        border-color: var(--cmt-border-glass) !important;
+        background: var(--cmt-page-clear) !important;
+        background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
+      }
+
+      html[data-codex-main-transparency="true"] [style*="color-background-panel"],
+      html[data-codex-main-transparency="true"] [style*="color-token-bg-fog"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-list-hover-background"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-main-surface-primary"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-foreground\\/5"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-foreground\\/10"] {
         border-color: var(--cmt-border-glass) !important;
         background: var(--cmt-page-clear) !important;
         background-color: var(--cmt-page-clear) !important;
