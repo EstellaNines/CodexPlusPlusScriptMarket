@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.1.2";
+  const SCRIPT_VERSION = "0.1.3";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
@@ -85,10 +85,13 @@
       html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout] {
         background: var(--cmt-page-clear) !important;
         background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
       }
 
       html[data-codex-main-transparency="true"] main > *,
       html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout],
+      html[data-codex-main-transparency="true"] [class*="home-main-content"],
+      html[data-codex-main-transparency="true"] [class*="home-banners"],
       html[data-codex-main-transparency="true"] [class*="h-\\[39\\%\\]"],
       html[data-codex-main-transparency="true"] [class*="thread"],
       html[data-codex-main-transparency="true"] [class*="transcript"],
@@ -96,11 +99,25 @@
       html[data-codex-main-transparency="true"] [data-testid*="thread" i] {
         background: var(--cmt-page-clear) !important;
         background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
+      }
+
+      html[data-codex-main-transparency="true"] main [class*="bg-token-"],
+      html[data-codex-main-transparency="true"] [role="main"] [class*="bg-token-"],
+      html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout] [class*="bg-token-"],
+      html[data-codex-main-transparency="true"] main [class*="shadow-"],
+      html[data-codex-main-transparency="true"] [role="main"] [class*="shadow-"],
+      html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout] [class*="shadow-"] {
+        border-color: var(--cmt-border-glass) !important;
+        background: var(--cmt-page-clear) !important;
+        background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
       }
 
       html[data-codex-main-transparency="true"] [data-above-composer-portal],
       html[data-codex-main-transparency="true"] [data-above-composer-queue-portal],
       html[data-codex-main-transparency="true"] [data-above-composer-portal] ~ *,
+      html[data-codex-main-transparency="true"] [class*="bg-token-input-background"],
       html[data-codex-main-transparency="true"] [class*="electron\\:bg-token-main-surface-primary"],
       html[data-codex-main-transparency="true"] [class*="bg-token-side-bar-background"],
       html[data-codex-main-transparency="true"] [data-home-ambient-suggestions],
