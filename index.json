@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-11T00:00:00.000Z",
+  "updated_at": "2026-06-12T00:00:00.000Z",
   "scripts": [
     {
       "id": "codex-token-usage",
@@ -39,7 +39,7 @@
       "id": "codex-main-transparency",
       "name": "Codex Main Transparency",
       "description": "Make the Codex transparent main interface use glass-like materials while keeping the sidebar untouched.",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "author": "EstellaNines",
       "tags": [
         "codex",
@@ -49,7 +49,7 @@
       ],
       "homepage": "https://github.com/EstellaNines/CodexPlusPlusScriptMarket",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-main-transparency.js",
-      "sha256": "8bf7d51404c7412b7d5df6f90ee69a2b230405e1fedfe71c5b331e4e433ed14d"
+      "sha256": "bea2cec9ab8cd5d018807bad6e697b90b5abbd7c9ad7ceada05c1825ad251ffb"
     }
   ]
 }

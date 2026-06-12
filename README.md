@@ -14,7 +14,7 @@ https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/in
 | --- | --- | --- | --- |
 | Codex Token Usage | 0.1.12 | 彩色 token 指标；固定随最新 Codex 回复显示，并修复徽标空框不显示文字。 | https://github.com/kokotao/codex-token-usage-script |
 | Codex Context Used Meter | 38 | 彩色上下文用量文字；自动跟随 Codex 浅色/深色主题；默认从顶部下移显示；支持锁定/解锁图标按钮与持久化拖动位置。 | https://github.com/Minghou-Lei/codex-context-used-meter |
-| Codex Main Transparency | 0.1.4 | 让 Codex 主界面使用接近侧边栏的透明玻璃材质；安装即生效，不额外写入位置或开关状态。 | https://github.com/EstellaNines/CodexPlusPlusScriptMarket |
+| Codex Main Transparency | 0.1.5 | 让 Codex 主界面使用接近侧边栏的透明玻璃材质；安装即生效，不额外写入位置或开关状态。 | https://github.com/EstellaNines/CodexPlusPlusScriptMarket |
 
 ## 使用方式
 

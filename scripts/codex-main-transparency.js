@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.1.4";
+  const SCRIPT_VERSION = "0.1.5";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
@@ -162,6 +162,28 @@
       html[data-codex-main-transparency="true"] main [contenteditable="true"],
       html[data-codex-main-transparency="true"] main form:has(textarea) {
         background: var(--cmt-input-glass) !important;
+      }
+
+      html[data-codex-main-transparency="true"] [class*="thread-content-max-width"],
+      html[data-codex-main-transparency="true"] [class*="h-\\[39\\%\\]"],
+      html[data-codex-main-transparency="true"] [class*="multilineSurface"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-input-background"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-main-surface-primary"],
+      html[data-codex-main-transparency="true"] [class*="electron\\:bg-token-main-surface-primary"],
+      html[data-codex-main-transparency="true"] [class*="bg-token-side-bar-background"],
+      html[data-codex-main-transparency="true"] main [class*="backdrop-blur"],
+      html[data-codex-main-transparency="true"] [role="main"] [class*="backdrop-blur"],
+      html[data-codex-main-transparency="true"] [data-app-shell-main-content-layout] [class*="backdrop-blur"],
+      html[data-codex-main-transparency="true"] [data-home-ambient-suggestions],
+      html[data-codex-main-transparency="true"] [data-home-ambient-suggestions] *,
+      html[data-codex-main-transparency="true"] [style*="color-background-panel"],
+      html[data-codex-main-transparency="true"] [style*="color-token-bg-fog"] {
+        border-color: var(--cmt-border-glass) !important;
+        background: var(--cmt-page-clear) !important;
+        background-color: var(--cmt-page-clear) !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
 
       html[data-codex-main-transparency="true"] main button:hover,

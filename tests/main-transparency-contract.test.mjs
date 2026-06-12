@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 const script = readFileSync(resolve("scripts/codex-main-transparency.js"), "utf8");
 
 assert.match(script, /const SCRIPT_ID = "codex-main-transparency";/, "script should expose a stable id");
-assert.match(script, /const SCRIPT_VERSION = "0\.1\.4";/, "script should expose the patched version");
+assert.match(script, /const SCRIPT_VERSION = "0\.1\.5";/, "script should expose the patched version");
 assert.match(script, /const API_KEY = "__codexMainTransparency";/, "script should expose a lightweight API namespace");
 assert.match(script, /const STYLE_ID = "codex-main-transparency-style";/, "script should install a named style tag");
 assert.match(script, /function installStyle\(\)/, "script should install transparent main-surface styles");
@@ -27,12 +27,15 @@ assert.match(script, /\[data-above-composer-portal\]/, "composer shell portal sh
 assert.match(script, /home-main-content/, "home main content container should be covered");
 assert.match(script, /home-banners/, "home banner overlay should be covered");
 assert.match(script, /bg-token-input-background/, "composer input token background should be covered");
+assert.match(script, /thread-content-max-width/, "thread-width wrapper masks should be covered");
+assert.match(script, /multilineSurface/, "composer multiline surface should be covered after glass rules");
 assert.match(script, /\[role="main"\]\s+\[class\*="bg-token-"\]/, "main token background utilities should be cleared");
 assert.match(script, /\[role="main"\]\s+\[class\*="shadow-"\]/, "main shadow utilities should be cleared");
 assert.match(script, /color-background-panel/, "settings panel inline backgrounds should be covered");
 assert.match(script, /color-token-bg-fog/, "settings fog panel backgrounds should be covered");
 assert.match(script, /bg-token-list-hover-background/, "selected settings tiles should be covered");
 assert.match(script, /bg-token-foreground\\\\\/5/, "settings pill button backgrounds should be covered");
+assert.match(script, /backdrop-filter:\s*none\s*!important/, "late mask cleanup should remove backdrop filters");
 assert.match(script, /electron\\\\:bg-token-main-surface-primary/, "electron main surface utility should be covered");
 assert.match(script, /bg-token-side-bar-background/, "composer footer token background should be covered");
 assert.match(script, /box-shadow:\s*none\s*!important/, "opaque ambient shadows should be removed");
