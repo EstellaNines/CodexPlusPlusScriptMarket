@@ -2,10 +2,11 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.1.0";
+  const SCRIPT_VERSION = "0.1.1";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
+  const TOP_FADE_SELECTOR = "[data-app-shell-main-content-top-fade]";
 
   if (window[INSTALL_KEY]) {
     const api = window[API_KEY];
@@ -143,8 +144,15 @@
     document.head?.appendChild(style);
   }
 
+  function removeTopFades() {
+    document.querySelectorAll(TOP_FADE_SELECTOR).forEach((element) => {
+      element.remove();
+    });
+  }
+
   function refresh() {
     installStyle();
+    removeTopFades();
     const root = document.documentElement;
     if (!root) return;
     root.dataset.codexMainTransparency = "true";

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 const script = readFileSync(resolve("scripts/codex-main-transparency.js"), "utf8");
 
 assert.match(script, /const SCRIPT_ID = "codex-main-transparency";/, "script should expose a stable id");
-assert.match(script, /const SCRIPT_VERSION = "0\.1\.0";/, "script should start at version 0.1.0");
+assert.match(script, /const SCRIPT_VERSION = "0\.1\.1";/, "script should expose the patched version");
 assert.match(script, /const API_KEY = "__codexMainTransparency";/, "script should expose a lightweight API namespace");
 assert.match(script, /const STYLE_ID = "codex-main-transparency-style";/, "script should install a named style tag");
 assert.match(script, /function installStyle\(\)/, "script should install transparent main-surface styles");
@@ -17,6 +17,11 @@ assert.match(script, /dataset\.codexMainTransparency/, "document root should exp
 assert.match(script, /html\[data-codex-main-transparency="true"\]/, "styles should be scoped behind an enabled marker");
 assert.match(script, /html,\s*body,\s*#root,\s*main/, "root and main surfaces should be covered");
 assert.match(script, /\[data-app-shell-main-content-layout\]/, "Codex main content layout should be covered");
+assert.match(
+  script,
+  /\[data-app-shell-main-content-top-fade\]/,
+  "Codex main content top fade should be covered",
+);
 assert.match(script, /backdrop-filter:\s*blur/, "main materials should use blur like a glass surface");
 assert.match(script, /rgba\(0,\s*0,\s*0,\s*0\)/, "script should remove opaque page backgrounds");
 assert.match(script, /rgba\(255,\s*255,\s*255,\s*0\.08\)/, "script should include translucent light material");
