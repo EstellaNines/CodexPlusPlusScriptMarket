@@ -7,10 +7,11 @@ const script = index.scripts.find((item) => item.id === "codex-main-transparency
 
 assert.ok(script, "market index should include the main transparency script");
 assert.equal(script.name, "Codex Main Transparency");
-assert.equal(script.version, "0.2.3");
+assert.equal(script.version, "0.2.4");
 assert.match(script.description, /background image/i);
 assert.match(script.description, /visible|layer/i);
 assert.match(script.description, /early injection|body/i);
+assert.match(script.description, /blob|object URL/i);
 assert.match(script.description, /32 MiB|larger local/i);
 assert.match(script.description, /shortcut/i);
 assert.equal(script.author, "EstellaNines");

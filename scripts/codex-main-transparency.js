@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.2.3";
+  const SCRIPT_VERSION = "0.2.4";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
@@ -84,6 +84,8 @@
     panelOpen: false,
     recordingShortcut: false,
     backgroundImageRestoreStarted: false,
+    backgroundObjectUrl: "",
+    backgroundObjectUrlSource: "",
     statusMessage: "",
     ...loadStoredSettings(),
   };
@@ -179,13 +181,63 @@
     return String(value || "").trim() === STORED_BACKGROUND_IMAGE_TOKEN;
   }
 
+  function isDataBackgroundImage(value) {
+    return /^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(String(value || ""));
+  }
+
   function escapeCssString(value) {
     return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n|\r|\f/g, "");
   }
 
+  function cssUrlValue(value) {
+    return `url("${escapeCssString(value)}")`;
+  }
+
   function cssImageUrl(value) {
     const image = normalizeBackgroundImage(value);
-    return image ? `url("${escapeCssString(image)}")` : "none";
+    return image ? cssUrlValue(image) : "none";
+  }
+
+  function revokeBackgroundObjectUrl() {
+    if (!state.backgroundObjectUrl) return;
+    URL.revokeObjectURL(state.backgroundObjectUrl);
+    state.backgroundObjectUrl = "";
+    state.backgroundObjectUrlSource = "";
+  }
+
+  function backgroundObjectUrlForDataImage(image) {
+    if (!isDataBackgroundImage(image)) return "";
+    if (state.backgroundObjectUrl && state.backgroundObjectUrlSource === image) {
+      return state.backgroundObjectUrl;
+    }
+    revokeBackgroundObjectUrl();
+    try {
+      const [header, payload] = image.split(",", 2);
+      const mime = header.match(/^data:([^;]+)/i)?.[1] || "image/jpeg";
+      const binary = window.atob(payload || "");
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+      }
+      state.backgroundObjectUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+      state.backgroundObjectUrlSource = image;
+      return state.backgroundObjectUrl;
+    } catch (error) {
+      revokeBackgroundObjectUrl();
+      showStatus("本地图片应用失败");
+      return "";
+    }
+  }
+
+  function backgroundImageCssValue(image) {
+    const normalizedImage = normalizeBackgroundImage(image);
+    if (!normalizedImage || isStoredBackgroundImageToken(normalizedImage)) return "none";
+    if (isDataBackgroundImage(normalizedImage)) {
+      const objectUrl = backgroundObjectUrlForDataImage(normalizedImage);
+      return objectUrl ? cssUrlValue(objectUrl) : "none";
+    }
+    revokeBackgroundObjectUrl();
+    return cssImageUrl(normalizedImage);
   }
 
   function readLocalBackgroundFile(file) {
@@ -436,9 +488,12 @@
     state.backgroundOpacityPercent = clampBackgroundOpacityPercent(state.backgroundOpacityPercent);
     state.backgroundFit = normalizeBackgroundFit(state.backgroundFit);
     state.backgroundBlurPx = clampBackgroundBlurPx(state.backgroundBlurPx);
-    const enabled = Boolean(state.backgroundEnabled && image && !isStoredBackgroundImageToken(image));
+    const shouldEnable = Boolean(state.backgroundEnabled && image && !isStoredBackgroundImageToken(image));
+    const backgroundImageValue = shouldEnable ? backgroundImageCssValue(image) : "none";
+    const enabled = shouldEnable && backgroundImageValue !== "none";
+    if (!enabled) revokeBackgroundObjectUrl();
     const style = root.style;
-    style.setProperty("--cmt-background-image", enabled ? cssImageUrl(image) : "none");
+    style.setProperty("--cmt-background-image", backgroundImageValue);
     style.setProperty("--cmt-background-opacity", enabled ? String(state.backgroundOpacityPercent / 100) : "0");
     style.setProperty("--cmt-background-fit", cssBackgroundFit(state.backgroundFit));
     style.setProperty("--cmt-background-blur", `${state.backgroundBlurPx}px`);
@@ -448,6 +503,7 @@
     if (layer) {
       layer.dataset.enabled = String(enabled);
       layer.hidden = !enabled;
+      layer.style.backgroundImage = backgroundImageValue;
     }
     syncControlPanel();
   }
@@ -1242,6 +1298,7 @@
   function destroy() {
     window.clearTimeout(state.refreshTimer);
     state.refreshTimer = 0;
+    revokeBackgroundObjectUrl();
     state.observer?.disconnect?.();
     state.themeObserver?.disconnect?.();
     if (state.themeMediaQuery && state.themeMediaListener) {

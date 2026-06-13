@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 const script = readFileSync(resolve("scripts/codex-main-transparency.js"), "utf8");
 
 assert.match(script, /const SCRIPT_ID = "codex-main-transparency";/, "script should expose a stable id");
-assert.match(script, /const SCRIPT_VERSION = "0\.2\.3";/, "script should expose the early body background layer fix version");
+assert.match(script, /const SCRIPT_VERSION = "0\.2\.4";/, "script should expose the local background object URL fix version");
 assert.match(script, /const API_KEY = "__codexMainTransparency";/, "script should expose a lightweight API namespace");
 assert.match(script, /const STYLE_ID = "codex-main-transparency-style";/, "script should install a named style tag");
 assert.match(script, /const CONTROL_ID = "codex-main-transparency-control";/, "script should install a named opacity control");
@@ -32,6 +32,10 @@ assert.match(script, /function openBackgroundImageStore\(/, "script should open 
 assert.match(script, /function saveBackgroundImageToStore\(/, "script should persist larger local backgrounds outside localStorage");
 assert.match(script, /function loadBackgroundImageFromStore\(/, "script should restore larger local backgrounds from IndexedDB");
 assert.match(script, /function clearBackgroundImageStore\(/, "script should clear stored local backgrounds");
+assert.match(script, /function backgroundImageCssValue\(/, "script should resolve local data backgrounds into CSS-safe values");
+assert.match(script, /URL\.createObjectURL/, "script should use blob object URLs for large local data backgrounds");
+assert.match(script, /URL\.revokeObjectURL/, "script should revoke stale local background object URLs");
+assert.match(script, /layer\.style\.backgroundImage\s*=/, "script should apply the resolved background directly to the layer");
 assert.match(script, /function materialPercentFromTransparency\(/, "script should invert transparency into material strength");
 assert.match(script, /function shortcutFromEvent\(/, "script should normalize keyboard shortcuts");
 assert.match(script, /function isValidShortcut\(/, "script should validate two or three key shortcuts");
