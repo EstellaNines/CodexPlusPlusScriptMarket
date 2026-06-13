@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-12T16:26:27.000Z",
+  "updated_at": "2026-06-13T09:01:59.000Z",
   "scripts": [
     {
       "id": "codex-token-usage",
@@ -38,8 +38,8 @@
     {
       "id": "codex-main-transparency",
       "name": "Codex Main Transparency",
-      "description": "Make the Codex main interface fully transparent at 100%, remove main-area masks, shadows, and blur panels, and keep a compact live transparency slider for temporary tuning.",
-      "version": "0.1.9",
+      "description": "Make the Codex main interface fully transparent at 100%, add a lightweight background image settings panel, and support a custom shortcut for toggling the image background.",
+      "version": "0.2.0",
       "author": "EstellaNines",
       "tags": [
         "codex",
@@ -49,7 +49,7 @@
       ],
       "homepage": "https://github.com/EstellaNines/CodexPlusPlusScriptMarket",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-main-transparency.js",
-      "sha256": "78f0d8eb2e6bfeb38543e0b8389a5bf5d0f52948e7c9839404b4f69d236a9914"
+      "sha256": "e877a55e0c77d44cee7e38dd392369809e9accd6e1c70c969abed47ea599116d"
     }
   ]
 }

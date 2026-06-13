@@ -7,8 +7,9 @@ const script = index.scripts.find((item) => item.id === "codex-main-transparency
 
 assert.ok(script, "market index should include the main transparency script");
 assert.equal(script.name, "Codex Main Transparency");
-assert.equal(script.version, "0.1.9");
-assert.match(script.description, /100%.*fully transparent|fully transparent.*100%/i);
+assert.equal(script.version, "0.2.0");
+assert.match(script.description, /background image/i);
+assert.match(script.description, /shortcut/i);
 assert.equal(script.author, "EstellaNines");
 assert.deepEqual(script.tags, ["codex", "ui", "transparency", "glass"]);
 assert.equal(script.homepage, "https://github.com/EstellaNines/CodexPlusPlusScriptMarket");
