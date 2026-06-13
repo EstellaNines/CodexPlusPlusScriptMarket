@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.2.1";
+  const SCRIPT_VERSION = "0.2.3";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
@@ -681,7 +681,7 @@
       #codex-main-background-layer {
         position: fixed;
         inset: 0;
-        z-index: -1;
+        z-index: 0;
         pointer-events: none;
         background-image: var(--cmt-background-image);
         background-size: var(--cmt-background-fit);
@@ -691,6 +691,11 @@
         filter: blur(var(--cmt-background-blur));
         transform: scale(1.02);
         transition: opacity 160ms ease, filter 160ms ease;
+      }
+
+      html[data-codex-main-transparency="true"] body > :not(#codex-main-background-layer):not(#codex-main-transparency-control) {
+        position: relative;
+        z-index: 1;
       }
 
       #codex-main-transparency-control {
@@ -805,14 +810,18 @@
   }
 
   function installBackgroundLayer() {
+    if (!document.body) {
+      document.addEventListener("DOMContentLoaded", scheduleRefresh, { once: true });
+      return;
+    }
     let layer = document.getElementById(BACKGROUND_LAYER_ID);
     if (!layer) {
       layer = document.createElement("div");
       layer.id = BACKGROUND_LAYER_ID;
       layer.dataset.version = SCRIPT_VERSION;
       layer.setAttribute("aria-hidden", "true");
-      document.body?.prepend(layer);
     }
+    document.body.prepend(layer);
     applyBackground();
   }
 

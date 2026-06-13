@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-06-13T16:39:26.000Z",
+  "updated_at": "2026-06-13T17:08:44.000Z",
   "scripts": [
     {
       "id": "codex-token-usage",
@@ -38,8 +38,8 @@
     {
       "id": "codex-main-transparency",
       "name": "Codex Main Transparency",
-      "description": "Make the Codex main interface fully transparent at 100%, add a lightweight background image settings panel, support a custom shortcut, and allow larger local background images up to 32 MiB.",
-      "version": "0.2.1",
+      "description": "Make the Codex main interface fully transparent at 100%, show a visible background image layer behind Codex content even during early body injection, support a custom shortcut, and allow larger local images up to 32 MiB.",
+      "version": "0.2.3",
       "author": "EstellaNines",
       "tags": [
         "codex",
@@ -49,7 +49,7 @@
       ],
       "homepage": "https://github.com/EstellaNines/CodexPlusPlusScriptMarket",
       "script_url": "https://raw.githubusercontent.com/EstellaNines/CodexPlusPlusScriptMarket/main/scripts/codex-main-transparency.js",
-      "sha256": "4c768849a8d75bfecabf7d2599d591cfb95e646f04aa79ba347220f87bd78c29"
+      "sha256": "09021ea4fd164d05cc979457f7ba7ed26ffc3ee13bdf61b300747e0a5fc81d00"
     }
   ]
 }

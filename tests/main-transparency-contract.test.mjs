@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 const script = readFileSync(resolve("scripts/codex-main-transparency.js"), "utf8");
 
 assert.match(script, /const SCRIPT_ID = "codex-main-transparency";/, "script should expose a stable id");
-assert.match(script, /const SCRIPT_VERSION = "0\.2\.1";/, "script should expose the enlarged background image version");
+assert.match(script, /const SCRIPT_VERSION = "0\.2\.3";/, "script should expose the early body background layer fix version");
 assert.match(script, /const API_KEY = "__codexMainTransparency";/, "script should expose a lightweight API namespace");
 assert.match(script, /const STYLE_ID = "codex-main-transparency-style";/, "script should install a named style tag");
 assert.match(script, /const CONTROL_ID = "codex-main-transparency-control";/, "script should install a named opacity control");
@@ -69,9 +69,13 @@ assert.match(script, /max = "100"/, "opacity range should end at one hundred");
 assert.match(script, /addEventListener\("input"/, "opacity range should update live while dragged");
 assert.match(script, /html\[data-codex-main-transparency="true"\]/, "styles should be scoped behind an enabled marker");
 assert.match(script, /#codex-main-background-layer/, "styles should include the dedicated background layer");
-assert.match(script, /z-index:\s*-1/, "background layer should sit behind the main interface");
+assert.match(script, /#codex-main-background-layer[\s\S]{0,320}z-index:\s*0/, "background layer should stay above the page canvas");
+assert.match(script, /body > :not\(#codex-main-background-layer\)[\s\S]{0,260}z-index:\s*1/, "app content should sit above the background image layer");
 assert.match(script, /pointer-events:\s*none/, "background layer should not block Codex interactions");
 assert.match(script, /background-image:\s*var\(--cmt-background-image\)/, "background layer should draw from the configured image");
+assert.match(script, /if \(!document\.body\)/, "background layer install should tolerate early injection before body exists");
+assert.match(script, /DOMContentLoaded[\s\S]{0,120}scheduleRefresh/, "early background layer install should retry after DOMContentLoaded");
+assert.match(script, /document\.body\.prepend\(layer\)/, "background layer should be inserted into the visible document body");
 assert.match(script, /html,\s*body,\s*#root,\s*main/, "root and main surfaces should be covered");
 assert.match(script, /\[data-app-shell-main-content-layout\]/, "Codex main content layout should be covered");
 assert.match(
