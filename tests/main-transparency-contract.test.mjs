@@ -5,13 +5,14 @@ import { resolve } from "node:path";
 const script = readFileSync(resolve("scripts/codex-main-transparency.js"), "utf8");
 
 assert.match(script, /const SCRIPT_ID = "codex-main-transparency";/, "script should expose a stable id");
-assert.match(script, /const SCRIPT_VERSION = "0\.2\.0";/, "script should expose the background settings version");
+assert.match(script, /const SCRIPT_VERSION = "0\.2\.1";/, "script should expose the enlarged background image version");
 assert.match(script, /const API_KEY = "__codexMainTransparency";/, "script should expose a lightweight API namespace");
 assert.match(script, /const STYLE_ID = "codex-main-transparency-style";/, "script should install a named style tag");
 assert.match(script, /const CONTROL_ID = "codex-main-transparency-control";/, "script should install a named opacity control");
 assert.match(script, /const BACKGROUND_LAYER_ID = "codex-main-background-layer";/, "script should install a dedicated background image layer");
 assert.match(script, /const SETTINGS_STORAGE_KEY = "codex-main-transparency-settings-v1";/, "script should persist background settings under a stable key");
-assert.match(script, /const MAX_BACKGROUND_IMAGE_BYTES = 2 \* 1024 \* 1024;/, "local image imports should be capped at 2 MiB");
+assert.match(script, /const MAX_BACKGROUND_IMAGE_BYTES = 32 \* 1024 \* 1024;/, "local image imports should accept larger 4K backgrounds");
+assert.match(script, /const BACKGROUND_IMAGE_STORAGE_KEY = "codex-main-transparency-background-image";/, "large local backgrounds should use a stable IndexedDB key");
 assert.match(script, /const DEFAULT_SHORTCUT = "Alt\+B";/, "background toggle shortcut should default to Alt+B");
 assert.match(script, /const DEFAULT_TRANSPARENCY_PERCENT = 100;/, "opacity control should default to fully transparent main materials");
 assert.match(script, /const AUDIT_EXCLUDE_SELECTOR = `#\$\{CONTROL_ID\}`;/, "audit should exclude the floating opacity control");
@@ -27,6 +28,10 @@ assert.match(script, /function clampTransparencyPercent\(/, "script should clamp
 assert.match(script, /function clampBackgroundOpacityPercent\(/, "script should clamp background opacity values");
 assert.match(script, /function normalizeBackgroundImage\(/, "script should validate URL and data URI backgrounds");
 assert.match(script, /function readLocalBackgroundFile\(/, "script should support local image import");
+assert.match(script, /function openBackgroundImageStore\(/, "script should open IndexedDB storage for larger local backgrounds");
+assert.match(script, /function saveBackgroundImageToStore\(/, "script should persist larger local backgrounds outside localStorage");
+assert.match(script, /function loadBackgroundImageFromStore\(/, "script should restore larger local backgrounds from IndexedDB");
+assert.match(script, /function clearBackgroundImageStore\(/, "script should clear stored local backgrounds");
 assert.match(script, /function materialPercentFromTransparency\(/, "script should invert transparency into material strength");
 assert.match(script, /function shortcutFromEvent\(/, "script should normalize keyboard shortcuts");
 assert.match(script, /function isValidShortcut\(/, "script should validate two or three key shortcuts");
@@ -140,5 +145,7 @@ assert.match(script, /rgba\(17,\s*24,\s*39,\s*0\)/, "default dark main material 
 assert.match(script, /refresh\(\);\s*installObservers\(\);/, "script should apply immediately and watch later DOM updates");
 assert.match(script, /installOpacityControl\(\)/, "refresh should install and sync the opacity control");
 assert.match(script, /localStorage/, "background panel settings should persist in localStorage");
+assert.match(script, /indexedDB/, "large local image data should be stored in IndexedDB instead of localStorage");
+assert.doesNotMatch(script, /backgroundImage:\s*state\.backgroundImage/, "large local image data should not be serialized into localStorage settings");
 assert.doesNotMatch(script, /sessionStorage/, "background panel settings should not use sessionStorage");
 assert.doesNotMatch(script, /pointerdown|pointermove|pointerup/, "transparency should not add draggable controls");

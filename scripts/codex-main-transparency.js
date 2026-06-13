@@ -2,7 +2,7 @@
   "use strict";
 
   const SCRIPT_ID = "codex-main-transparency";
-  const SCRIPT_VERSION = "0.2.0";
+  const SCRIPT_VERSION = "0.2.1";
   const INSTALL_KEY = "__codexMainTransparencyInstalled";
   const API_KEY = "__codexMainTransparency";
   const STYLE_ID = "codex-main-transparency-style";
@@ -12,18 +12,23 @@
   const BACKGROUND_AUDIT_EXCLUDE_SELECTOR = `#${BACKGROUND_LAYER_ID}`;
   const TOP_FADE_SELECTOR = "[data-app-shell-main-content-top-fade]";
   const SETTINGS_STORAGE_KEY = "codex-main-transparency-settings-v1";
+  const BACKGROUND_IMAGE_DB_NAME = "codex-main-transparency";
+  const BACKGROUND_IMAGE_STORE_NAME = "background-images";
+  const BACKGROUND_IMAGE_STORAGE_KEY = "codex-main-transparency-background-image";
+  const STORED_BACKGROUND_IMAGE_TOKEN = `indexeddb:${BACKGROUND_IMAGE_STORAGE_KEY}`;
   const DEFAULT_TRANSPARENCY_PERCENT = 100;
   const DEFAULT_BACKGROUND_OPACITY_PERCENT = 72;
   const DEFAULT_BACKGROUND_FIT = "cover";
   const DEFAULT_BACKGROUND_BLUR_PX = 0;
   const DEFAULT_SHORTCUT = "Alt+B";
-  const MAX_BACKGROUND_IMAGE_BYTES = 2 * 1024 * 1024;
+  const MAX_BACKGROUND_IMAGE_BYTES = 32 * 1024 * 1024;
   const AUDIT_MAX_ISSUES = 40;
   const SUPPORTED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
   const DEFAULT_SETTINGS = {
     transparencyPercent: DEFAULT_TRANSPARENCY_PERCENT,
     backgroundEnabled: false,
     backgroundImage: "",
+    backgroundImageStored: false,
     backgroundOpacityPercent: DEFAULT_BACKGROUND_OPACITY_PERCENT,
     backgroundFit: DEFAULT_BACKGROUND_FIT,
     backgroundBlurPx: DEFAULT_BACKGROUND_BLUR_PX,
@@ -78,6 +83,7 @@
     shortcutListenerInstalled: false,
     panelOpen: false,
     recordingShortcut: false,
+    backgroundImageRestoreStarted: false,
     statusMessage: "",
     ...loadStoredSettings(),
   };
@@ -94,10 +100,12 @@
 
   function normalizeSettings(raw) {
     const settings = raw && typeof raw === "object" ? raw : {};
+    const backgroundImage = normalizeBackgroundImage(settings.backgroundImage);
     return {
       transparencyPercent: clampTransparencyPercent(settings.transparencyPercent),
       backgroundEnabled: Boolean(settings.backgroundEnabled),
-      backgroundImage: normalizeBackgroundImage(settings.backgroundImage),
+      backgroundImage,
+      backgroundImageStored: isStoredBackgroundImageToken(backgroundImage) || Boolean(settings.backgroundImageStored),
       backgroundOpacityPercent: clampBackgroundOpacityPercent(settings.backgroundOpacityPercent),
       backgroundFit: normalizeBackgroundFit(settings.backgroundFit),
       backgroundBlurPx: clampBackgroundBlurPx(settings.backgroundBlurPx),
@@ -110,7 +118,8 @@
       window.localStorage?.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
         transparencyPercent: state.transparencyPercent,
         backgroundEnabled: state.backgroundEnabled,
-        backgroundImage: state.backgroundImage,
+        backgroundImage: persistedBackgroundImage(),
+        backgroundImageStored: Boolean(state.backgroundImageStored),
         backgroundOpacityPercent: state.backgroundOpacityPercent,
         backgroundFit: state.backgroundFit,
         backgroundBlurPx: state.backgroundBlurPx,
@@ -119,6 +128,10 @@
     } catch (error) {
       showStatus("设置未能保存");
     }
+  }
+
+  function persistedBackgroundImage() {
+    return state.backgroundImageStored ? STORED_BACKGROUND_IMAGE_TOKEN : normalizeBackgroundImage(state.backgroundImage);
   }
 
   function clampTransparencyPercent(value) {
@@ -151,6 +164,7 @@
   function normalizeBackgroundImage(value) {
     const image = String(value || "").trim();
     if (!image) return "";
+    if (isStoredBackgroundImageToken(image)) return image;
     if (/^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(image)) return image;
     if (!/^https?:\/\//i.test(image)) return "";
     try {
@@ -159,6 +173,10 @@
     } catch (error) {
       return "";
     }
+  }
+
+  function isStoredBackgroundImageToken(value) {
+    return String(value || "").trim() === STORED_BACKGROUND_IMAGE_TOKEN;
   }
 
   function escapeCssString(value) {
@@ -181,13 +199,109 @@
         return;
       }
       if (file.size > MAX_BACKGROUND_IMAGE_BYTES) {
-        reject(new Error("图片需小于 2 MiB"));
+        reject(new Error("图片需小于 32 MiB"));
         return;
       }
       const reader = new FileReader();
       reader.addEventListener("load", () => resolve(String(reader.result || "")));
       reader.addEventListener("error", () => reject(new Error("图片读取失败")));
       reader.readAsDataURL(file);
+    });
+  }
+
+  function openBackgroundImageStore() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        reject(new Error("当前环境不支持 IndexedDB"));
+        return;
+      }
+      const request = window.indexedDB.open(BACKGROUND_IMAGE_DB_NAME, 1);
+      request.addEventListener("upgradeneeded", () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(BACKGROUND_IMAGE_STORE_NAME)) {
+          db.createObjectStore(BACKGROUND_IMAGE_STORE_NAME);
+        }
+      });
+      request.addEventListener("success", () => resolve(request.result));
+      request.addEventListener("error", () => reject(request.error || new Error("背景图片存储打开失败")));
+    });
+  }
+
+  function saveBackgroundImageToStore(image) {
+    return new Promise((resolve, reject) => {
+      openBackgroundImageStore().then((db) => {
+        const transaction = db.transaction(BACKGROUND_IMAGE_STORE_NAME, "readwrite");
+        transaction.objectStore(BACKGROUND_IMAGE_STORE_NAME).put(image, BACKGROUND_IMAGE_STORAGE_KEY);
+        transaction.addEventListener("complete", () => {
+          db.close();
+          resolve();
+        });
+        transaction.addEventListener("error", () => {
+          db.close();
+          reject(transaction.error || new Error("背景图片保存失败"));
+        });
+      }, reject);
+    });
+  }
+
+  function loadBackgroundImageFromStore() {
+    return new Promise((resolve, reject) => {
+      openBackgroundImageStore().then((db) => {
+        const transaction = db.transaction(BACKGROUND_IMAGE_STORE_NAME, "readonly");
+        const request = transaction.objectStore(BACKGROUND_IMAGE_STORE_NAME).get(BACKGROUND_IMAGE_STORAGE_KEY);
+        request.addEventListener("success", () => {
+          db.close();
+          resolve(normalizeBackgroundImage(request.result));
+        });
+        request.addEventListener("error", () => {
+          db.close();
+          reject(request.error || new Error("背景图片读取失败"));
+        });
+      }, reject);
+    });
+  }
+
+  function clearBackgroundImageStore() {
+    return new Promise((resolve, reject) => {
+      openBackgroundImageStore().then((db) => {
+        const transaction = db.transaction(BACKGROUND_IMAGE_STORE_NAME, "readwrite");
+        transaction.objectStore(BACKGROUND_IMAGE_STORE_NAME).delete(BACKGROUND_IMAGE_STORAGE_KEY);
+        transaction.addEventListener("complete", () => {
+          db.close();
+          resolve();
+        });
+        transaction.addEventListener("error", () => {
+          db.close();
+          reject(transaction.error || new Error("背景图片清除失败"));
+        });
+      }, reject);
+    });
+  }
+
+  function restoreStoredBackgroundImage() {
+    if (state.backgroundImageRestoreStarted || !state.backgroundImageStored) return;
+    state.backgroundImageRestoreStarted = true;
+    loadBackgroundImageFromStore().then((image) => {
+      if (!image) {
+        state.backgroundImage = "";
+        state.backgroundImageStored = false;
+        state.backgroundEnabled = false;
+        saveSettings();
+        showStatus("本地背景已失效");
+      } else {
+        state.backgroundImage = image;
+        state.backgroundImageStored = true;
+      }
+      applyBackground();
+      syncControlPanel();
+    }, (error) => {
+      state.backgroundImage = "";
+      state.backgroundImageStored = false;
+      state.backgroundEnabled = false;
+      saveSettings();
+      showStatus(String(error && error.message || error));
+      applyBackground();
+      syncControlPanel();
     });
   }
 
@@ -322,7 +436,7 @@
     state.backgroundOpacityPercent = clampBackgroundOpacityPercent(state.backgroundOpacityPercent);
     state.backgroundFit = normalizeBackgroundFit(state.backgroundFit);
     state.backgroundBlurPx = clampBackgroundBlurPx(state.backgroundBlurPx);
-    const enabled = Boolean(state.backgroundEnabled && image);
+    const enabled = Boolean(state.backgroundEnabled && image && !isStoredBackgroundImageToken(image));
     const style = root.style;
     style.setProperty("--cmt-background-image", enabled ? cssImageUrl(image) : "none");
     style.setProperty("--cmt-background-opacity", enabled ? String(state.backgroundOpacityPercent / 100) : "0");
@@ -848,10 +962,12 @@
           return;
         }
         state.backgroundImage = image;
+        state.backgroundImageStored = false;
         state.backgroundEnabled = Boolean(image);
         showStatus(image ? "背景已应用" : "背景已清除");
         applyBackground();
         saveSettings();
+        clearBackgroundImageStore().catch(() => {});
       });
       urlInput.addEventListener("change", () => {
         applyUrlButton.click();
@@ -863,7 +979,9 @@
         try {
           const image = await readLocalBackgroundFile(fileInput.files?.[0]);
           if (!image) return;
+          await saveBackgroundImageToStore(image);
           state.backgroundImage = image;
+          state.backgroundImageStored = true;
           state.backgroundEnabled = true;
           showStatus("本地图片已导入");
           applyBackground();
@@ -876,10 +994,12 @@
       });
       clearButton.addEventListener("click", () => {
         state.backgroundImage = "";
+        state.backgroundImageStored = false;
         state.backgroundEnabled = false;
         showStatus("背景已清除");
         applyBackground();
         saveSettings();
+        clearBackgroundImageStore().catch(() => {});
       });
       backgroundOpacityRange.addEventListener("input", () => {
         state.backgroundOpacityPercent = clampBackgroundOpacityPercent(backgroundOpacityRange.value);
@@ -918,8 +1038,9 @@
     if (backgroundToggle) backgroundToggle.checked = Boolean(state.backgroundEnabled);
 
     const urlInput = control.querySelector("[data-codex-main-background-url-input]");
-    if (urlInput && urlInput.value !== state.backgroundImage) {
-      urlInput.value = state.backgroundImage;
+    const displayedBackgroundImage = state.backgroundImageStored ? "" : state.backgroundImage;
+    if (urlInput && urlInput.value !== displayedBackgroundImage) {
+      urlInput.value = displayedBackgroundImage;
     }
 
     const backgroundOpacityRange = control.querySelector("[data-codex-main-background-opacity-range]");
@@ -1045,6 +1166,7 @@
       materialPercent: materialPercentFromTransparency(state.transparencyPercent),
       backgroundEnabled: state.backgroundEnabled,
       backgroundOpacityPercent: state.backgroundOpacityPercent,
+      backgroundImageStored: state.backgroundImageStored,
       shortcut: state.shortcut,
       checked,
       issueCount: issues.length,
@@ -1063,6 +1185,7 @@
     installBackgroundLayer();
     installOpacityControl();
     installShortcutListener();
+    restoreStoredBackgroundImage();
   }
 
   function scheduleRefresh() {
